@@ -36,9 +36,22 @@ ul {
   background-color: #374151; /* cinza escuro */
 }
 .sideBar ul li.bg-gray-700 {
-  color: rgb(175, 241, 155);
+  color: #00E676;
   font-size: large;
   font-weight: bold;
   font-family: 'Space Grotesk';
+}
+
+
+.borda-animada {
+  position: absolute;
+  left: 0;
+  width: 4px;
+  background-color: #22c55e; /* verde tailwind */
+  border-radius: 9999px;
+  transition: top 0.3s ease;
+}
+.menu-container {
+  position: relative;
 }
 

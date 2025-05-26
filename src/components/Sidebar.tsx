@@ -3,7 +3,7 @@ import logo from "../assets/restaurante.png";
 import './stylesidebar.css';
 
 export default function Sidebar({ onSelect }: { onSelect: (value: string) => void }) {
-  const menus = ['Dashboard', 'Relatórios', 'Produtos', 'Clientes', 'Catálogo', 'Mesas'];
+  const menus = ['Dashboard', 'Produtos', 'Clientes', 'Catálogo', 'Mesas'];
   const [activeMenu, setActiveMenu] = useState('Dashboard');
 
   function handleSelect(item: string) {
@@ -19,7 +19,11 @@ export default function Sidebar({ onSelect }: { onSelect: (value: string) => voi
           alt="imagem-Logo-loja"
           className="logo-loja"
         />
-        <h1 className="h1Sidebar">Esfirraria do Zé</h1>
+        <div className="infoLoja">
+          <h1>Esfirraria do Zé</h1>
+          <p>12.345.678/9000-00</p>
+        </div>
+        
       </div>
 
       <div className="menu-container">

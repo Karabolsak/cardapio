@@ -1,0 +1,44 @@
+.sideBar {
+    background-color: #242424;
+    box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.5);
+    padding: 5px;
+    font-family: "Space Grotesk";
+    width: 300px;
+}
+.logo-loja {
+    height: 50px;
+    width: 50px;
+}
+.h1Sidebar {
+    margin: 0px;
+    font-size: 1.5rem;
+    padding-left: 10px;
+}
+.teste1 {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-bottom: 1px solid #505050;
+    padding: 10px;
+}
+li {
+    list-style: none;
+    padding-bottom: 10px;
+    padding-top: 10px;
+}
+ul {
+    padding: 0px;
+}
+.sideBar ul li {
+  transition: background-color 0.3s ease;
+}
+.sideBar ul li:hover {
+  background-color: #374151; /* cinza escuro */
+}
+.sideBar ul li.bg-gray-700 {
+  color: rgb(175, 241, 155);
+  font-size: large;
+  font-weight: bold;
+  font-family: 'Space Grotesk';
+}
+

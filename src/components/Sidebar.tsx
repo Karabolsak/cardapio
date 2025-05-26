@@ -1,15 +1,42 @@
+import React, { useState } from "react";
+import logo from "../assets/restaurante.png";
+import './stylesidebar.css';
+
 export default function Sidebar({ onSelect }: { onSelect: (value: string) => void }) {
+  
   const menus = ['Dashboard', 'Produtos', 'Clientes', 'Relatórios'];
 
+  // Estado para controlar o menu ativo - inicializado com 'Dashboard'
+  const [activeMenu, setActiveMenu] = useState('Dashboard');
+
+  // Função para selecionar menu
+  function handleSelect(item: string) {
+    setActiveMenu(item);
+    onSelect(item);
+  }
+
   return (
-    <div className="w-64 bg-gray-900 text-white h-screen p-4">
-      <h1 className="text-2xl font-bold mb-6">Menu</h1>
-      <ul className="space-y-4">
+    <div className="sideBar">
+      <div className="teste1">
+        <img 
+          src={logo} 
+          alt="imagem-Logo-loja" 
+          className="logo-loja"
+        />
+      
+        <h1 className="h1Sidebar">Esfirraria do Zé</h1>
+      </div>
+      <ul>
         {menus.map((item) => (
           <li
             key={item}
-            onClick={() => onSelect(item)}
-            className="cursor-pointer hover:bg-gray-700 p-2 rounded"
+            onClick={() => handleSelect(item)}
+            className={`
+              cursor-pointer 
+              p-2 rounded 
+              hover:bg-gray-700 
+              ${activeMenu === item ? 'bg-gray-700 font-bold' : ''}
+            `}
           >
             {item}
           </li>

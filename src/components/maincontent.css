@@ -1,0 +1,14 @@
+
+.conteudoClientes {
+   display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+}
+.conteudoClientes p {
+    padding: 5px;
+    border: 1px solid white;   
+}
+.conteudoClientes li {
+    padding: 10px;
+}

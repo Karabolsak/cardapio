@@ -12,6 +12,18 @@ export default function MainContent({ selected }: { selected: string }) {
         return  <div >
                   <h1>Relatório de clientes</h1>
                   <ul className="conteudoClientes">
+                    <li><p>Data</p>
+                      <ul>
+                        <li>26/05/2025</li>
+                        <li>26/05/2025</li>
+                        <li>26/05/2025</li>
+                        <li>26/05/2025</li>
+                        <li>26/05/2025</li>
+                        <li>26/05/2025</li>
+                        <li>26/05/2025</li>
+                        <li>26/05/2025</li>
+                      </ul>
+                    </li>
                     <li><p>Nome</p>
                       <ul>
                         <li className="truncate max-w-[200px]">Vinicius Lodi Cordeiro Karabolsak</li>
@@ -34,6 +46,18 @@ export default function MainContent({ selected }: { selected: string }) {
                         <li>123.456.789-00</li>
                         <li>123.456.789-00</li>
                         <li>123.456.789-00</li>
+                      </ul>
+                    </li>
+                    <li><p>Telefone</p>
+                      <ul>
+                        <li>11-911111111</li>
+                        <li>11-911111111</li>
+                        <li>11-911111111</li>
+                        <li>11-911111111</li>
+                        <li>11-911111111</li>
+                        <li>11-911111111</li>
+                        <li>11-911111111</li>
+                        <li>11-911111111</li>
                       </ul>
                     </li>
                     <li><p>Itens consumidos</p>

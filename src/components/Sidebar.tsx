@@ -3,7 +3,7 @@ import logo from "../assets/restaurante.png";
 import './stylesidebar.css';
 
 export default function Sidebar({ onSelect }: { onSelect: (value: string) => void }) {
-  const menus = ['Dashboard', 'Relatórios', 'Produtos', 'Clientes', 'Novos itens'];
+  const menus = ['Dashboard', 'Relatórios', 'Produtos', 'Clientes', 'Catálogo', 'Mesas'];
   const [activeMenu, setActiveMenu] = useState('Dashboard');
 
   function handleSelect(item: string) {

@@ -1,160 +1,88 @@
 import "../App.css";
 import "./maincontent.css";
+import { useEffect, useState } from "react";
+import { supabase } from "../supabaseClient"
 
 export default function MainContent({ selected }: { selected: string }) {
+  
+  const [clientes, setClientes] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+    useEffect(() => {
+    const fetchClientes = async () => {
+      const { data, error } = await supabase
+        .from('clientes')
+        .select('*') // você pode customizar os campos aqui
+
+      if (error) {
+        console.error("Erro ao buscar clientes:", error)
+      } else {
+        setClientes(data || [])
+      }
+
+      setLoading(false)
+    }
+    if (selected === "Clientes") {
+      fetchClientes()
+    }
+  }, [selected])
+
+  const renderClientes = () => (
+    <div>
+      <h1>Relatório de Clientes</h1>
+      {loading ? (
+        <p>Carregando clientes...</p>
+      ) : (
+        <table className="min-w-full bg-white shadow-md rounded-xl overflow-hidden">
+          <thead>
+            <tr>
+              <th className="p-4">Nome</th>
+              <th className="p-4">CPF</th>
+              <th className="p-4">Nascimento</th>
+              <th className="p-4">Telefone</th>
+              <th className="p-4">Criado</th>
+              <th className="p-4">Loja</th>
+              <th className="p-4">Gasto total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {clientes.map((cliente) => (
+              <tr key={cliente.id} className="border-t hover:bg-gray-50">
+                <td className="p-4">{cliente.nome}</td>
+                <td className="p-4">{cliente.cpf}</td>
+                <td className="p-4">{cliente.nascimento}</td>
+                <td className="p-4">{cliente.telefone}</td>
+                <td className="p-4">{new Date(cliente.created_at).toLocaleString('pt-BR')}</td>
+                <td className="p-4">{cliente.id_loja}</td>
+                <td className="p-4">{cliente.gasto_total}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  )
+
   const renderContent = () => {
     switch (selected) {
       case "Dashboard":
-        return <p>📊 Bem-vindo ao dashboard!</p>;
+        return <p>📊 Bem-vindo ao dashboard!</p>
       case "Produtos":
-        return <p>📑 Aqui estão seus relatórios.</p>;
+        return <p>📑 Aqui estão seus relatórios.</p>
       case "Clientes":
-        return  <div >
-                  <h1>Relatório de clientes</h1>
-                  <ul className="conteudoClientes">
-                    <li><p>Data</p>
-                      <ul>
-                        <li>26/05/2025</li>
-                        <li>26/05/2025</li>
-                        <li>26/05/2025</li>
-                        <li>26/05/2025</li>
-                        <li>26/05/2025</li>
-                        <li>26/05/2025</li>
-                        <li>26/05/2025</li>
-                        <li>26/05/2025</li>
-                      </ul>
-                    </li>
-                    <li><p>Nome</p>
-                      <ul>
-                        <li className="truncate max-w-[200px]">Vinicius Lodi Cordeiro Karabolsak</li>
-                        <li className="truncate max-w-[200px]">Victor Lodi Coreiro Karabolsak</li>
-                        <li className="truncate max-w-[200px]">Vinicius Lodi Cordeiro Karabolsak</li>
-                        <li className="truncate max-w-[200px]">Victor Lodi Coreiro Karabolsak</li>
-                        <li className="truncate max-w-[200px]">Vinicius Lodi Cordeiro Karabolsak</li>
-                        <li className="truncate max-w-[200px]">Victor Lodi Coreiro Karabolsak</li>
-                        <li className="truncate max-w-[200px]">Vinicius Lodi Cordeiro Karabolsak</li>
-                        <li className="truncate max-w-[200px]">Victor Lodi Coreiro Karabolsak</li>
-                      </ul>
-                    </li>
-                    <li><p>CPF</p>
-                      <ul>
-                        <li>123.456.789-00</li>
-                        <li>123.456.789-00</li>
-                        <li>123.456.789-00</li>
-                        <li>123.456.789-00</li>
-                        <li>123.456.789-00</li>
-                        <li>123.456.789-00</li>
-                        <li>123.456.789-00</li>
-                        <li>123.456.789-00</li>
-                      </ul>
-                    </li>
-                    <li><p>Telefone</p>
-                      <ul>
-                        <li>11-911111111</li>
-                        <li>11-911111111</li>
-                        <li>11-911111111</li>
-                        <li>11-911111111</li>
-                        <li>11-911111111</li>
-                        <li>11-911111111</li>
-                        <li>11-911111111</li>
-                        <li>11-911111111</li>
-                      </ul>
-                    </li>
-                    <li><p>Itens consumidos</p>
-                      <ul>
-                        <li>5</li>
-                        <li>8</li>
-                        <li>5</li>
-                        <li>8</li>
-                        <li>5</li>
-                        <li>8</li>
-                        <li>5</li>
-                        <li>8</li>
-                      </ul>
-                    </li>
-                    <li><p>Valor gasto</p>
-                      <ul>
-                        <li>R$ 78,50</li>
-                        <li>R$ 152,34</li>
-                        <li>R$ 78,50</li>
-                        <li>R$ 152,34</li>
-                        <li>R$ 78,50</li>
-                        <li>R$ 152,34</li>
-                        <li>R$ 78,50</li>
-                        <li>R$ 152,34</li>                        
-                      </ul>
-                    </li>
-                    <li><p>Ticket médio</p>
-                      <ul>
-                        <li>R$ 78,50</li>
-                        <li>R$ 152,34</li>
-                        <li>R$ 78,50</li>
-                        <li>R$ 152,34</li>
-                        <li>R$ 78,50</li>
-                        <li>R$ 152,34</li>
-                        <li>R$ 78,50</li>
-                        <li>R$ 152,34</li>
-                      </ul>
-                    </li>
-                    <li><p>Pagamento</p>
-                      <ul>
-                        <li>Débito</li>
-                        <li>Crédito</li>
-                        <li>Débito</li>
-                        <li>Crédito</li>
-                        <li>Débito</li>
-                        <li>Crédito</li>
-                        <li>Débito</li>
-                        <li>Crédito</li>                        
-                      </ul>
-                    </li>
-                    <li><p>Mesa</p>
-                      <ul>
-                        <li>2</li>
-                        <li>5</li>
-                        <li>4</li>
-                        <li>8</li>
-                        <li>7</li>
-                        <li>7</li>
-                        <li>1</li>
-                        <li>2</li>
-                      </ul>
-                    </li>
-
-                    
-                    
-                  </ul>
-
-
-
-
-
-
-
-
-                  
-                </div>;
+        return renderClientes()
       case "Mesas":
-        return <p>🧑‍🤝‍🧑 Gerenciamento de clientes.</p>;
+        return <p>🧑‍🤝‍🧑 Gerenciamento de clientes.</p>
       default:
-        return <p>Selecione uma opção.</p>;
+        return <p>Selecione uma opção.</p>
     }
-  };
-return (
+  }
+
+  return (
     <div className="flex-1 p-8 text-white">
       <h2 className="text-3xl font-bold mb-6">{selected}</h2>
       <div className="bg-gray-800 p-6 rounded-lg shadow-md">
         {renderContent()}
       </div>
     </div>
-  );
+  )
 }
-
-  
-
-
-
-
-
-
-

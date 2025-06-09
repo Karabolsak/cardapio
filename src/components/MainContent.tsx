@@ -2,89 +2,35 @@ import "../App.css";
 import "./maincontent.css";
 import { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient"
-import comida from "../../public/hamburgue.png"
+import shopping from "../../src/assets/add-shopping-car.svg"
 
 
-const produtos = [
-  {
-    id: 1,
-    nome: "Pizza Calabresa",
-    descricao: "aaa",
-    preco: 29.99,
-    imagem: "https://via.placeholder.com/150",
-    classe: "Sobremessa",
-  },
-  {
-    id: 2,
-    nome: "Pizza Margherita",
-    preco: 32.00,
-    imagem: "https://via.placeholder.com/150",
-    classe: "Sobremessa",
-  },
-  {
-    id: 3,
-    nome: "Pizza Portuguesa",
-    preco: 34.50,
-    imagem: "https://via.placeholder.com/150",
-    classe: "Sobremessa",
-  },
-  {
-    id: 4,
-    nome: "Pizza Calabresa",
-    preco: 29.99,
-    imagem: "https://via.placeholder.com/150",
-    classe: "Sobremessa",
-  },
-  {
-    id: 5,
-    nome: "Pizza Margherita",
-    preco: 32.00,
-    imagem: "https://via.placeholder.com/150",
-    classe: "Sobremessa",
-  },
-  {
-    id: 6,
-    nome: "Pizza Portuguesa",
-    preco: 34.50,
-    imagem: "https://via.placeholder.com/150",
-    classe: "Sobremessa",
-  },{
-    id: 7,
-    nome: "Pizza Calabresa",
-    preco: 29.99,
-    imagem: "https://via.placeholder.com/150",
-    classe: "Sobremessa",
-  },
-  {
-    id: 8,
-    nome: "Pizza Margherita",
-    preco: 32.00,
-    imagem: "https://via.placeholder.com/150",
-    classe: "Sobremessa",
-  },
-  {
-    id: 9,
-    nome: "Pizza Portuguesa",
-    preco: 34.50,
-    imagem: "https://via.placeholder.com/150",
-    classe: "Sobremessa",
-  },
-]
 
 
 export default function MainContent({ selected }: { selected: string }) {
-  
+  type Produto = {
+  id: number
+  nome: string
+  tamanho: string
+  descricao: string
+  price: number
+  imgProduto: string  // ou o nome certo
+}
+  const [produtos, setProdutos] = useState<Produto[]>([])
   const [clientes, setClientes] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-    useEffect(() => {
+  const [loadingClientes, setLoadingClientes] = useState(false)
+  const [loadingProdutos, setLoadingProdutos] = useState(false)
+
+useEffect(() => {
   const fetchClientes = async () => {
+    setLoadingClientes(true)
     const { data, error } = await supabase.from('clientes').select('*')
     if (error) {
       console.error("Erro ao buscar clientes:", error)
     } else {
       setClientes(data || [])
     }
-    setLoading(false)
+    setLoadingClientes(false)
   }
 
   if (selected === "Clientes") {
@@ -92,22 +38,52 @@ export default function MainContent({ selected }: { selected: string }) {
   }
 }, [selected])
 
+useEffect(() => {
+  const fetchProdutos = async () => {
+    setLoadingProdutos(true)
+    const { data, error } = await supabase.from('produtos').select('*')
+    if (error) {
+      console.error("Erro ao buscar produtos", error)
+    } else {
+      setProdutos(data || [])
+    }
+    setLoadingProdutos(false)
+  }
+
+  if (selected === "Produtos") {
+    fetchProdutos()
+  }
+}, [selected])
+
+
+
   const renderProdutos = () => (
-    <div className="catalogo-grid">
-                {produtos.map(produto => (
-                  <div key={produto.id} className="item-card">
-                    <img src={comida} alt={produto.nome} className="item-img" />
-                    <h3>{produto.nome}</h3>
-                    <p>{produto.descricao}</p>
-                    <p>R$ {produto.preco.toFixed(2)}</p>
-                  </div>
-                ))}
+    <div>
+      <h1>Produtos</h1>
+      {loadingProdutos ? (
+        <p>Carregando produtos...</p>
+      ) : (
+      <div className="catalogo-grid"><h1></h1>
+              {produtos.map((produto) => (
+                <div key={produto.id} className="item-card">
+                <img src={produto.imgProduto} className="item-img" />
+                <h3>{produto.nome}</h3>
+                <h5>Tamanho do prato: {produto.tamanho}</h5>
+                <h4>Descrição</h4>
+                <p>{produto.descricao}</p>
+                <div className="preco">
+                  <p>R$ {produto.price?.toFixed(2)}</p>
+                  <img src={shopping} alt="Adicionar ao carrinho" />
+                </div>
               </div>
+            ))}
+      </div>)}
+    </div>
   )
   const renderClientes = () => (
     <div>
       <h1>Relatório de Clientes</h1>
-      {loading ? (
+      {loadingClientes ? (
         <p>Carregando clientes...</p>
       ) : (
       <table className="min-w-full bg-white shadow-md rounded-xl overflow-hidden">
@@ -149,12 +125,12 @@ export default function MainContent({ selected }: { selected: string }) {
         return renderProdutos()
       case "Clientes":
           return renderClientes()
-      case "Catálogo":
-        return <p>a</p>
       case "Mesas":
         return <p>🧑‍🤝‍🧑 Gerenciamento de clientes.</p>
-        case "Abertura de comandas":
+      case "Abertura de comandas":
           return <p>a</p>
+      case "Novos produtos":
+        return <p>a</p>
       default:
         return <p>Selecione uma opção.</p>
     }

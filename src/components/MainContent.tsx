@@ -14,12 +14,13 @@ export default function MainContent({ selected }: { selected: string }) {
   tamanho: string
   descricao: string
   price: number
-  imgProduto: string  // ou o nome certo
+  imgProduto: string  
 }
   const [produtos, setProdutos] = useState<Produto[]>([])
   const [clientes, setClientes] = useState<any[]>([])
   const [loadingClientes, setLoadingClientes] = useState(false)
   const [loadingProdutos, setLoadingProdutos] = useState(false)
+  const [loja, setLoja] = useState<any[]> ([])
 
 useEffect(() => {
   const fetchClientes = async () => {
@@ -37,7 +38,6 @@ useEffect(() => {
     fetchClientes()
   }
 }, [selected])
-
 useEffect(() => {
   const fetchProdutos = async () => {
     setLoadingProdutos(true)
@@ -54,7 +54,17 @@ useEffect(() => {
     fetchProdutos()
   }
 }, [selected])
-
+useEffect(() => {
+    const fetchLoja = async () => {
+      const { data, error } = await supabase.from('loja').select('*')
+      if (error) {
+        console.error("Erro ao buscar loja", error)
+      }else {
+        setLoja(data || [])
+      }
+    }
+    fetchLoja();
+  }, []);
 
 
   const renderProdutos = () => (
@@ -105,8 +115,8 @@ useEffect(() => {
                 <td className="p-4">{cliente.cpf}</td>
                 <td className="p-4">{cliente.nascimento}</td>
                 <td className="p-4">{cliente.telefone}</td>
-                <td className="p-4">{new Date(cliente.created_at).toLocaleString('pt-BR')}</td>
-                <td className="p-4">{cliente.id_loja}</td>
+                <td className="p-4">{new Date(cliente.criado_em).toLocaleString('pt-BR')}</td>
+                <td className="p-4">{loja[0]?.nome}</td>
                 <td className="p-4">{cliente.gasto_total}</td>
               </tr>
             ))}
@@ -129,8 +139,6 @@ useEffect(() => {
         return <p>🧑‍🤝‍🧑 Gerenciamento de clientes.</p>
       case "Abertura de comandas":
           return <p>a</p>
-      case "Novos produtos":
-        return <p>a</p>
       default:
         return <p>Selecione uma opção.</p>
     }

@@ -20,7 +20,7 @@
 }
 .teste1 {
     display: flex;
-    justify-content: center;
+    justify-content: space-around;
     align-items: center;
     border-bottom: 1px solid #505050;
     padding: 10px;

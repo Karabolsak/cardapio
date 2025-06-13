@@ -4,7 +4,7 @@ import './stylesidebar.css';
 import { supabase } from "../supabaseClient";
 
 export default function Sidebar({ onSelect }: { onSelect: (value: string) => void }) {
-  const menus = ['Dashboard', 'Produtos', 'Clientes', 'Mesas', 'Abertura de comanda' ];
+  const menus = ['Dashboard', 'Produtos', 'Clientes', 'Mesas' ];
   const [activeMenu, setActiveMenu] = useState('Dashboard');
   const [loja, setLoja] = useState<any[]> ([])
 

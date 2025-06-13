@@ -21,6 +21,13 @@ export default function MainContent({ selected }: { selected: string }) {
   const [loadingClientes, setLoadingClientes] = useState(false)
   const [loadingProdutos, setLoadingProdutos] = useState(false)
   const [loja, setLoja] = useState<any[]> ([])
+  const [todasMesas, setTodasMesas] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+
+
+
+
 
 useEffect(() => {
   const fetchClientes = async () => {
@@ -65,6 +72,31 @@ useEffect(() => {
     }
     fetchLoja();
   }, []);
+useEffect(() => {
+  if (!loja[0]?.id_loja) return;
+    const buscarMesas = async () => {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("mesas")
+        .select("*")
+        .eq("id_loja", loja[0].id_loja);
+
+      if (error) {
+      console.error("Erro ao buscar mesas:", error);
+      } else {
+        setTodasMesas(data || []);
+      }
+      setLoading(false);
+    };
+
+  buscarMesas();
+
+  const intervalId = setInterval(() => {
+    buscarMesas();
+  }, 20000); 
+  return () => clearInterval(intervalId); 
+}, [loja]);
+
 
 
   const renderProdutos = () => (
@@ -73,7 +105,7 @@ useEffect(() => {
       {loadingProdutos ? (
         <p>Carregando produtos...</p>
       ) : (
-      <div className="catalogo-grid"><h1></h1>
+      <div className="catalogo-gridMesas"><h1></h1>
               {produtos.map((produto) => (
                 <div key={produto.id} className="item-card">
                 <img src={produto.imgProduto} className="item-img" />
@@ -125,7 +157,31 @@ useEffect(() => {
       )}
     </div>
   )
-
+  const renderMesas = () => (
+    <div>
+    <h1>Mesas</h1>
+    {loading ? (
+      <p>Carregando mesas...</p>
+    ) : todasMesas.length === 0 ? (
+      <p>Nenhuma mesa cadastrada.</p>
+    ) : (
+      <div className="catalogo-grid">
+        {todasMesas.map((mesa) => (
+          <div
+            key={mesa.id}
+            className={`mesa ${mesa.ativa ? 'mesa-ocupada' : 'mesa-livre'}`}
+          >
+             Mesa #{mesa.numero}
+              <div className="status">
+                {mesa.ativa ? "❌ Ocupada" : "✅ Livre"}
+              </div>
+            
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+  )
 
   const renderContent = () => {
     switch (selected) {
@@ -136,9 +192,7 @@ useEffect(() => {
       case "Clientes":
           return renderClientes()
       case "Mesas":
-        return <p>🧑‍🤝‍🧑 Gerenciamento de clientes.</p>
-      case "Abertura de comandas":
-          return <p>a</p>
+        return renderMesas()
       default:
         return <p>Selecione uma opção.</p>
     }
@@ -146,7 +200,6 @@ useEffect(() => {
 
   return (
     <div className="flex-1 p-8 text-white">
-      <h2 className="text-3xl font-bold mb-6">{selected}</h2>
       <div className="bg-gray-800 p-6 rounded-lg shadow-md">
         {renderContent()}
       </div>

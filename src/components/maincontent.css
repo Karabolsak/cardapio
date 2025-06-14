@@ -15,12 +15,15 @@
 .tabela {
     background-color: rgba(0, 0, 0, 0.2);
 }
-
+.conteudo-mesas {
+  display: flex;
+}
 .catalogo-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 24px;
-  padding: 16px;
+  padding: 20px;
+  width: 80%;
 }
 .item-card {
   background-color: #2d2d2d;
@@ -128,4 +131,18 @@
   transform: scale(1.05);
   box-shadow:
     0 0 25px 10px rgba(255, 255, 255, 0.8);
+}
+.catalogo-grid p {
+  font-size: medium;
+  font-style: italic;
+}
+.dinamico-comanda {
+  background-color: #242424;
+  padding: 10px;
+  width: 20%;
+  margin-right: 20px;
+  border-radius: 20px;
+}
+.dinamico-comanda P {
+  margin: 0;
 }

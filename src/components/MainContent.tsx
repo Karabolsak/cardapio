@@ -16,15 +16,167 @@ export default function MainContent({ selected }: { selected: string }) {
   price: number
   imgProduto: string  
 }
+type Mesa = {
+  id: number;
+  numero: number;
+  ativa: boolean;
+  id_loja: number;
+};
+type Cliente = {
+  id: number;
+  nome: string;
+  cpf: string;
+  nascimento: string;
+  telefone: string;
+  criado_em: string;
+  gasto_total: number;
+};
+type Loja = {
+  id_loja: number;
+  nome: string;
+};
+type ItemComanda = {
+  id: number;
+  id_produto: number;
+  nome_produto: string;
+  quantidade: number;
+  preco_unitario: number;
+  adicionado_em: string;
+  id_colaborador: number;
+  status: string;
+};
+
   const [produtos, setProdutos] = useState<Produto[]>([])
-  const [clientes, setClientes] = useState<any[]>([])
+  const [clientes, setClientes] = useState<Cliente[]>([]);
   const [loadingClientes, setLoadingClientes] = useState(false)
   const [loadingProdutos, setLoadingProdutos] = useState(false)
-  const [loja, setLoja] = useState<any[]> ([])
+  const [loja, setLoja] = useState<Loja[]> ([])
   const [todasMesas, setTodasMesas] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [mesaSelecionada, setMesaSelecionada] = useState<Mesa | null>(null);
+  const [itensComanda, setItensComanda] = useState<ItemComanda[]>([]);
+  const [idComandaSelecionada, setIdComandaSelecionada] = useState<number | null>(null)
+
+  const abrirMesa = async (mesa: Mesa) => {
+    const { error: errorMesa } = await supabase
+    .from("mesas")
+    .update({ ativa: true })
+    .eq("id", mesa.id)
+
+    if (errorMesa) {
+      console.error("Erro ao ativar mesa:", errorMesa);
+    }
+    
+    const { data: novaComanda, error: errorComanda } = await supabase
+    .from("comandas")
+    .insert([
+      {
+        id_mesa: mesa.id,
+        id_loja: mesa.id_loja,
+        aberta_em: new Date().toISOString(),
+        status: "aberta",
+      },
+    ])
+    .select()
+
+    if (errorComanda) {
+      console.error("Erro ao criar comanda:", errorComanda);
+      return;
+    }
+
+    const atualizadas = todasMesas.map((m) => 
+      m.id === mesa.id ? { ...m, ativa: true } : m 
+    );
+    setTodasMesas(atualizadas);
+    setMesaSelecionada({ ...mesa, ativa: true });
+    
+    console.log("Comanda criada com sucesso:", novaComanda);
+  };
+  const encerrarComanda = async (mesa: Mesa) => {
+  // 1. Buscar comanda aberta da mesa
+  const { data: comandasAbertas, error: fetchError } = await supabase
+    .from("comandas")
+    .select("*")
+    .eq("id_mesa", mesa.id)
+    .eq("status", "aberta");
+
+  if (fetchError || !comandasAbertas || comandasAbertas.length === 0) {
+    console.error("Nenhuma comanda aberta encontrada:", fetchError);
+    return;
+  }
+
+  const comanda = comandasAbertas[0];
+
+  // 2. Atualizar status da comanda
+  const { error: updateComandaError } = await supabase
+    .from("comandas")
+    .update({ status: "fechada", fechada_em: new Date().toISOString() })
+    .eq("id", comanda.id);
+
+  if (updateComandaError) {
+    console.error("Erro ao fechar comanda:", updateComandaError);
+    return;
+  }
+
+  // 3. Atualizar status dos itens da comanda (se tiver essa lógica)
+  const { error: updateItensError } = await supabase
+    .from("itens_comandas")
+    .update({ status: "encerrado", encerrado_em: new Date().toISOString() })
+    .eq("id_comanda", comanda.id);
+
+  if (updateItensError) {
+    console.warn("Itens não foram encerrados corretamente:", updateItensError);
+    // Continua mesmo assim...
+  }
+
+  // 4. Liberar mesa
+  const { error: updateMesaError } = await supabase
+    .from("mesas")
+    .update({ ativa: false })
+    .eq("id", mesa.id);
+
+  if (updateMesaError) {
+    console.error("Erro ao liberar mesa:", updateMesaError);
+    return;
+  }
+
+  const mesasAtualizadas = todasMesas.map((m) =>
+    m.id === mesa.id ? { ...m, ativa: false } : m
+  );
+  setTodasMesas(mesasAtualizadas);
+  setMesaSelecionada({ ...mesa, ativa: false });
+
+  console.log("Comanda e itens encerrados com sucesso!");
+};
+  const carregarItensDaComanda = async (mesa: Mesa) => {
+  const { data: comandasAbertas, error: fetchError } = await supabase
+    .from("comandas")
+    .select("*")
+    .eq("id_mesa", mesa.id)
+    .eq("status", "aberta");
+
+  if (fetchError || !comandasAbertas || comandasAbertas.length === 0) {
+    console.error("Nenhuma comanda aberta encontrada:", fetchError);
+    setItensComanda([]);
+    return;
+  }
+
+  const comanda = comandasAbertas[0];
+  setIdComandaSelecionada(comanda.id);
+
+  const { data: itens, error: itensError } = await supabase
+  .from("itens_comanda")
+  .select("id, id_produto, nome_produto, quantidade, preco_unitario, adicionado_em, id_colaborador, status")
+  .eq("id_comanda", comanda.id);
 
 
+  if (itensError) {
+    console.error("Erro ao buscar itens da comanda:", itensError);
+    return;
+  }
+
+  setItensComanda(itens || [0]);
+};
 
 
 
@@ -62,40 +214,41 @@ useEffect(() => {
   }
 }, [selected])
 useEffect(() => {
-    const fetchLoja = async () => {
-      const { data, error } = await supabase.from('loja').select('*')
-      if (error) {
-        console.error("Erro ao buscar loja", error)
-      }else {
-        setLoja(data || [])
-      }
+  const fetchLojaEMesas = async () => {
+    const { data: lojas, error: erroLoja } = await supabase.from('loja').select('*');
+    if (erroLoja) {
+      console.error("Erro ao buscar loja", erroLoja);
+      return;
     }
-    fetchLoja();
-  }, []);
-useEffect(() => {
-  if (!loja[0]?.id_loja) return;
-    const buscarMesas = async () => {
+    setLoja(lojas || []);
+
+    if (lojas && lojas[0]?.id_loja) {
       setLoading(true);
-      const { data, error } = await supabase
+      const { data: mesas, error: erroMesas } = await supabase
         .from("mesas")
         .select("*")
-        .eq("id_loja", loja[0].id_loja);
+        .eq("id_loja", lojas[0].id_loja);
 
-      if (error) {
-      console.error("Erro ao buscar mesas:", error);
+      if (erroMesas) {
+        console.error("Erro ao buscar mesas:", erroMesas);
       } else {
-        setTodasMesas(data || []);
+        setTodasMesas(mesas || []);
       }
       setLoading(false);
-    };
+    }
+  };
 
-  buscarMesas();
+  fetchLojaEMesas();
+}, []);
+useEffect(() => {
+  if (mesaSelecionada && mesaSelecionada.ativa) {
+    carregarItensDaComanda(mesaSelecionada);
+  }
+}, [mesaSelecionada]);
 
-  const intervalId = setInterval(() => {
-    buscarMesas();
-  }, 20000); 
-  return () => clearInterval(intervalId); 
-}, [loja]);
+
+
+
 
 
 
@@ -158,31 +311,100 @@ useEffect(() => {
     </div>
   )
   const renderMesas = () => (
-    <div>
-    <h1>Mesas</h1>
-    {loading ? (
-      <p>Carregando mesas...</p>
-    ) : todasMesas.length === 0 ? (
-      <p>Nenhuma mesa cadastrada.</p>
-    ) : (
-      <div className="catalogo-grid">
-        {todasMesas.map((mesa) => (
-          <div
-            key={mesa.id}
-            className={`mesa ${mesa.ativa ? 'mesa-ocupada' : 'mesa-livre'}`}
-          >
-             Mesa #{mesa.numero}
-              <div className="status">
-                {mesa.ativa ? "❌ Ocupada" : "✅ Livre"}
+      <div>
+        <h1>Mesas</h1>
+        {loading ? (
+          <p>Carregando mesas...</p>
+        ) : todasMesas.length === 0 ? (
+          <p>Nenhuma mesa cadastrada.</p>
+        ) : (
+              <div className="conteudo-mesas">
+                <div className="catalogo-grid">
+                  {todasMesas.map((mesa) => (
+                    <div
+                      key={mesa.id}
+                      className={`mesa ${mesa.ativa ? 'mesa-ocupada' : 'mesa-livre'}`}
+                      onClick={() => setMesaSelecionada(mesa)}
+                    >
+                      Mesa #{mesa.numero}
+                        <div className="status">
+                          {mesa.ativa ? "❌ Ocupada" : "✅ Livre"}
+                        </div>
+                        <p className="mt-2 text-sm">
+                          {mesa.ativa ? "Detalhes da mesa" : "Abrir mesa"}
+                        </p>
+                        
+                    </div>
+                  ))}
+                
+                </div> 
+                {mesaSelecionada && (
+                  <div className="dinamico-comanda">
+                    <div className="p-6 flex flex-col h-full">
+                      <div className="flex justify-between items-center mb-6">
+                        <h2 className="text-2xl font-bold">
+                        Mesa #{mesaSelecionada.numero}
+                        </h2>
+                        <button
+                          onClick={() => setMesaSelecionada(null)}
+                          className="text-gray-400 hover:text-white text-xl"
+                          >
+                          ✕
+                        </button>
+                      </div>
+                      <p className="mb-4">
+                        Status:{" "}
+                        <span className={mesaSelecionada.ativa ? "text-red-400" : "text-green-400"}>
+                          {mesaSelecionada.ativa ? "Ocupada" : "Livre"}
+                        </span>
+                      </p>
+                      {mesaSelecionada.ativa ? (
+                        <div>
+                          <p>Comanda: {idComandaSelecionada?.toString().slice(0, 5)}</p>
+                          <p className="font-semibold mb-2">Itens da comanda:</p>
+                          {itensComanda.length === 0 ? (
+                            <p className="text-sm text-gray-400 mb-4">Nenhum item adicionado ainda.</p>
+                          ) : (
+                            <ul className="mb-4 space-y-2">
+                              {itensComanda.map((item) => (
+                                <li key={item.id} className="bg-gray-700 p-3 rounded">
+                                  <div className="flex justify-between">
+                                    <span>{item.nome_produto}</span>
+                                    <span>
+                                      {item.quantidade} x R${item.preco_unitario.toFixed(2)}
+                                    </span>
+                                  </div>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                          <button
+                            className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded w-full"
+                            onClick={() => encerrarComanda(mesaSelecionada)}
+                          >
+                            Encerrar Comanda
+                          </button>
+                        </div>
+                      ) : (
+                        <button 
+                          className="bg-green-500 hover:bg-green-600 px-4 py-2 rounded w-full mb-2"
+                          onClick={() => abrirMesa(mesaSelecionada)}
+                          >
+                          Abrir Mesa
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
-            
-          </div>
-        ))}
-      </div>
-    )}
-  </div>
+            )}
+                    
+    </div>
   )
+ 
 
+
+  
   const renderContent = () => {
     switch (selected) {
       case "Dashboard":
@@ -197,12 +419,14 @@ useEffect(() => {
         return <p>Selecione uma opção.</p>
     }
   }
+  
 
   return (
     <div className="flex-1 p-8 text-white">
       <div className="bg-gray-800 p-6 rounded-lg shadow-md">
         {renderContent()}
       </div>
+            
     </div>
   )
 }

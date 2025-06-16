@@ -584,7 +584,6 @@ useEffect(() => {
         return <p>Selecione uma opção.</p>
     }
   }
-  <a href=""></a>
 
   return (
     <div className="flex-1 p-8 text-white">

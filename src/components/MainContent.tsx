@@ -5,10 +5,8 @@ import { supabase } from "../supabaseClient"
 import shopping from "../../src/assets/add-shopping-car.svg"
 
 
-
-
 export default function MainContent({ selected }: { selected: string }) {
-  type Produto = {
+type Produto = {
   id: number
   nome: string
   tamanho: string
@@ -21,6 +19,7 @@ type Mesa = {
   numero: number;
   ativa: boolean;
   id_loja: number;
+  id_comanda: number;
 };
 type Cliente = {
   id: number;
@@ -43,20 +42,26 @@ type ItemComanda = {
   preco_unitario: number;
   adicionado_em: string;
   id_colaborador: number;
-  status: string;
+  status: boolean;
 };
 
   const [produtos, setProdutos] = useState<Produto[]>([])
   const [clientes, setClientes] = useState<Cliente[]>([]);
-  const [loadingClientes, setLoadingClientes] = useState(false)
-  const [loadingProdutos, setLoadingProdutos] = useState(false)
-  const [loja, setLoja] = useState<Loja[]> ([])
-  const [todasMesas, setTodasMesas] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
   const [mesaSelecionada, setMesaSelecionada] = useState<Mesa | null>(null);
   const [itensComanda, setItensComanda] = useState<ItemComanda[]>([]);
+  const [itemSelecionado, setItemSelecionado] = useState<Produto | null>(null);
+  const [loja, setLoja] = useState<Loja[]> ([])
+  const [loadingClientes, setLoadingClientes] = useState(false)
+  const [loadingProdutos, setLoadingProdutos] = useState(false)
+  const [todasMesas, setTodasMesas] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
   const [idComandaSelecionada, setIdComandaSelecionada] = useState<number | null>(null)
+  const [mesasAtivas, setMesasAtivas] = useState<Mesa[]>([]);
+  const [mesaParaAdicionar, setMesaParaAdicionar] = useState<Mesa | null>(null);
+  const [quantidade, setQuantidade] = useState(1);
+  const [mensagemSucesso, setMensagemSucesso] = useState<string | null>(null);
 
+  
   const abrirMesa = async (mesa: Mesa) => {
     const { error: errorMesa } = await supabase
     .from("mesas")
@@ -74,7 +79,7 @@ type ItemComanda = {
         id_mesa: mesa.id,
         id_loja: mesa.id_loja,
         aberta_em: new Date().toISOString(),
-        status: "aberta",
+        status: true,
       },
     ])
     .select()
@@ -93,12 +98,11 @@ type ItemComanda = {
     console.log("Comanda criada com sucesso:", novaComanda);
   };
   const encerrarComanda = async (mesa: Mesa) => {
-  // 1. Buscar comanda aberta da mesa
   const { data: comandasAbertas, error: fetchError } = await supabase
     .from("comandas")
     .select("*")
     .eq("id_mesa", mesa.id)
-    .eq("status", "aberta");
+    .eq("status", true);
 
   if (fetchError || !comandasAbertas || comandasAbertas.length === 0) {
     console.error("Nenhuma comanda aberta encontrada:", fetchError);
@@ -107,10 +111,9 @@ type ItemComanda = {
 
   const comanda = comandasAbertas[0];
 
-  // 2. Atualizar status da comanda
   const { error: updateComandaError } = await supabase
     .from("comandas")
-    .update({ status: "fechada", fechada_em: new Date().toISOString() })
+    .update({ status: false, fechada_em: new Date().toISOString() })
     .eq("id", comanda.id);
 
   if (updateComandaError) {
@@ -118,18 +121,17 @@ type ItemComanda = {
     return;
   }
 
-  // 3. Atualizar status dos itens da comanda (se tiver essa lógica)
+  
   const { error: updateItensError } = await supabase
-    .from("itens_comandas")
+    .from("itens_comanda")
     .update({ status: "encerrado", encerrado_em: new Date().toISOString() })
     .eq("id_comanda", comanda.id);
 
   if (updateItensError) {
     console.warn("Itens não foram encerrados corretamente:", updateItensError);
-    // Continua mesmo assim...
+    
   }
 
-  // 4. Liberar mesa
   const { error: updateMesaError } = await supabase
     .from("mesas")
     .update({ ativa: false })
@@ -153,7 +155,7 @@ type ItemComanda = {
     .from("comandas")
     .select("*")
     .eq("id_mesa", mesa.id)
-    .eq("status", "aberta");
+    .eq("status", true);
 
   if (fetchError || !comandasAbertas || comandasAbertas.length === 0) {
     console.error("Nenhuma comanda aberta encontrada:", fetchError);
@@ -177,6 +179,53 @@ type ItemComanda = {
 
   setItensComanda(itens || [0]);
 };
+  const adicionarItemNaComanda = async () => {
+  if (!itemSelecionado || !mesaParaAdicionar) {
+    alert("Selecione um produto e uma mesa para adicionar o item.");
+    return;
+  }
+
+  const { data: comandaVinculada, error: errorComanda } = await supabase
+    .from('comandas')
+    .select('id')
+    .eq('id_mesa', mesaParaAdicionar.id)
+    .limit(1)
+    .maybeSingle();
+
+  if (errorComanda) {
+    console.error('Erro ao buscar comanda:', errorComanda);
+    alert('Erro ao buscar comanda vinculada à mesa.');
+    return;
+  }
+
+  if (!comandaVinculada) {
+    alert('Nenhuma comanda vinculada a essa mesa.');
+    return;
+  }
+
+  const { error } = await supabase
+    .from('itens_comanda')
+    .insert([{
+      id_comanda: comandaVinculada.id,
+      id_produto: itemSelecionado.id,
+      quantidade,
+      preco_unitario: itemSelecionado.price,
+      adicionado_em: new Date().toISOString(),
+      status: 'pendente',
+      nome_produto: itemSelecionado.nome,
+    }]);
+
+  if (error) {
+    console.error('Erro ao adicionar item:', error);
+    alert('Erro ao adicionar item, tente novamente');
+  } else {
+    setMensagemSucesso("Item adicionado com sucesso!");
+    setItemSelecionado(null);
+    setQuantidade(1);
+  }
+};
+
+
 
 
 
@@ -245,7 +294,22 @@ useEffect(() => {
     carregarItensDaComanda(mesaSelecionada);
   }
 }, [mesaSelecionada]);
+useEffect(() => {
+  if (itemSelecionado && itemSelecionado?.id) {
+    setItemSelecionado(itemSelecionado);
+  }
+}, [itemSelecionado]);
+useEffect(() => {
+  const fetchMesasAtivas = async () => {
+    const { data, error } = await supabase
+      .from("mesas")
+      .select("*")
+      .eq("ativa", true);
 
+    if (!error) setMesasAtivas(data);
+  };
+  fetchMesasAtivas();
+}, []);
 
 
 
@@ -253,27 +317,126 @@ useEffect(() => {
 
 
   const renderProdutos = () => (
-    <div>
-      <h1>Produtos</h1>
-      {loadingProdutos ? (
-        <p>Carregando produtos...</p>
-      ) : (
-      <div className="catalogo-gridMesas"><h1></h1>
-              {produtos.map((produto) => (
-                <div key={produto.id} className="item-card">
-                <img src={produto.imgProduto} className="item-img" />
-                <h3>{produto.nome}</h3>
-                <h5>Tamanho do prato: {produto.tamanho}</h5>
-                <h4>Descrição</h4>
-                <p>{produto.descricao}</p>
-                <div className="preco">
-                  <p>R$ {produto.price?.toFixed(2)}</p>
-                  <img src={shopping} alt="Adicionar ao carrinho" />
-                </div>
+  <div>
+    <h1>Produtos</h1>
+    {loadingProdutos ? (
+      <p>Carregando produtos...</p>
+    ) : (
+      <div className="conteudo-produtos">
+        <div className="catalogo-grid">
+          {produtos.map((produto) => (
+            <div key={produto.id} className="item-card" onClick={() => setItemSelecionado(produto)}>
+              <img src={produto.imgProduto} className="item-img"  />
+              <h3>{produto.nome}</h3>
+              <h5>Tamanho do prato: {produto.tamanho}</h5>
+              <h4>Descrição</h4>
+              <p>{produto.descricao}</p>
+              <div className="preco">
+                <p>R$ {produto.price?.toFixed(2)}</p>
+                <img src={shopping} alt="Adicionar ao carrinho" />
               </div>
-            ))}
-      </div>)}
-    </div>
+            </div>
+          ))}
+        </div>
+        <div>
+          {itemSelecionado && (
+            <div className="dinamico-produto">
+              <div>
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-2xl font-bold">{itemSelecionado.nome}</h2>
+                  <button
+                    onClick={() => setItemSelecionado(null)}
+                    className="text-gray-400 hover:text-white text-xl"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <img
+                  src={itemSelecionado.imgProduto}
+                  alt={itemSelecionado.nome}
+                  className="img-prod"
+                />
+                <div className="descritivo-produtos">
+                  <p>
+                  Tamanho:{" "}
+                  <span className="text-blue-400">{itemSelecionado.tamanho}</span>
+                  </p>
+                  <p className="text-xl font-semibold mb-4">
+                    Preço: R$ {itemSelecionado.price?.toFixed(2)}
+                  </p>
+                  <label className="block text-sm mb-1 text-white">Selecionar mesa ativa:</label>
+                  <div className="mb-4">
+                    <select
+                      value={mesaParaAdicionar ? String(mesaParaAdicionar.id) : ""}
+                      onChange={(e) => {
+                        const idSelecionado = e.target.value;
+                        if (idSelecionado === "") {
+                          setMesaParaAdicionar(null);
+                          return;
+                        }
+                        const mesaSelecionada = mesasAtivas.find(
+                          (mesa) => String(mesa.id) === idSelecionado
+                        );
+                        console.log("ID selecionado:", idSelecionado);
+                        console.log("Mesa encontrada:", mesaSelecionada);
+                        setMesaParaAdicionar(mesaSelecionada || null);
+                      }}>
+                      <option value="">Selecione uma mesa</option>
+                      {mesasAtivas.map((mesa) => (
+                        <option key={mesa.id} value={String(mesa.id)}>
+                          Mesa #{mesa.numero}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                    <div className="mb-4">
+                      <label className="block text-sm mb-1 text-white">Quantidade:</label>
+                      <div className="flex items-center space-x-3 bg-gray-800 px-4 py-2 rounded w-fit">
+                        <button
+                          onClick={() => setQuantidade((prev) => Math.max(1, prev - 1))}
+                          className="text-white text-lg px-2 hover:text-red-400"
+                          style={{ marginRight: 15 }}
+                        >
+                          −
+                        </button>
+                        <span 
+                          className="text-white font-semibold"
+                          style={{ marginRight: 15 }}>
+                            {quantidade}
+                        </span>
+                        <button
+                          onClick={() => setQuantidade((prev) => prev + 1)}
+                          className="text-white text-lg px-2 hover:text-green-400"
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                </div>
+                <button
+                  className={`bg-green-500 hover:bg-green-600 px-4 py-2 rounded w-full ${
+                    !mesaParaAdicionar ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
+                  onClick={async () => {
+                    if (!mesaParaAdicionar) return;
+
+                    await adicionarItemNaComanda();
+
+                    setMensagemSucesso("Item adicionado com sucesso!");
+                    setTimeout(() => setMensagemSucesso(null), 3000);
+                  }}
+                  disabled={!mesaParaAdicionar}
+                >
+                  Adicionar ao pedido
+                </button>
+
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    )}
+  </div>
   )
   const renderClientes = () => (
     <div>
@@ -325,6 +488,7 @@ useEffect(() => {
                       key={mesa.id}
                       className={`mesa ${mesa.ativa ? 'mesa-ocupada' : 'mesa-livre'}`}
                       onClick={() => setMesaSelecionada(mesa)}
+                      style={{height: 110}}
                     >
                       Mesa #{mesa.numero}
                         <div className="status">
@@ -333,7 +497,6 @@ useEffect(() => {
                         <p className="mt-2 text-sm">
                           {mesa.ativa ? "Detalhes da mesa" : "Abrir mesa"}
                         </p>
-                        
                     </div>
                   ))}
                 
@@ -415,6 +578,8 @@ useEffect(() => {
           return renderClientes()
       case "Mesas":
         return renderMesas()
+      case "Cozinha":
+        return <p>Teste</p>        
       default:
         return <p>Selecione uma opção.</p>
     }
@@ -423,6 +588,12 @@ useEffect(() => {
 
   return (
     <div className="flex-1 p-8 text-white">
+      {mensagemSucesso && (
+        <div className="bg-green-600 text-white p-2 rounded mb-4">
+          {mensagemSucesso}
+        </div>
+      )}
+
       <div className="bg-gray-800 p-6 rounded-lg shadow-md">
         {renderContent()}
       </div>

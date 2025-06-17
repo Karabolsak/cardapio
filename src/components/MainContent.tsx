@@ -60,7 +60,7 @@ type ItemComanda = {
   const [mesaParaAdicionar, setMesaParaAdicionar] = useState<Mesa | null>(null);
   const [quantidade, setQuantidade] = useState(1);
   const [mensagemSucesso, setMensagemSucesso] = useState<string | null>(null);
-
+  const [nomeCliente, setNomeCliente] = useState("");
   
   const abrirMesa = async (mesa: Mesa) => {
     const { error: errorMesa } = await supabase
@@ -78,6 +78,7 @@ type ItemComanda = {
       {
         id_mesa: mesa.id,
         id_loja: mesa.id_loja,
+        cpf_cliente: nomeCliente,
         aberta_em: new Date().toISOString(),
         status: true,
       },
@@ -96,6 +97,7 @@ type ItemComanda = {
     setMesaSelecionada({ ...mesa, ativa: true });
     
     console.log("Comanda criada com sucesso:", novaComanda);
+    
   };
   const encerrarComanda = async (mesa: Mesa) => {
   const { data: comandasAbertas, error: fetchError } = await supabase
@@ -224,6 +226,12 @@ type ItemComanda = {
     setQuantidade(1);
   }
 };
+const calcularTotalComanda = (itens: ItemComanda[]) => {
+  return itens.reduce((total, item) => {
+    return total + item.quantidade * item.preco_unitario;
+  }, 0);
+};
+
 
 
 
@@ -506,7 +514,7 @@ useEffect(() => {
                     <div className="p-6 flex flex-col h-full">
                       <div className="flex justify-between items-center mb-6">
                         <h2 className="text-2xl font-bold">
-                        Mesa #{mesaSelecionada.numero}
+                        Mesa #{mesaSelecionada.numero} 
                         </h2>
                         <button
                           onClick={() => setMesaSelecionada(null)}
@@ -523,6 +531,7 @@ useEffect(() => {
                       </p>
                       {mesaSelecionada.ativa ? (
                         <div>
+                          <p>Cliente: {nomeCliente}</p>
                           <p>Comanda: {idComandaSelecionada?.toString().slice(0, 5)}</p>
                           <p className="font-semibold mb-2">Itens da comanda:</p>
                           {itensComanda.length === 0 ? (
@@ -541,6 +550,9 @@ useEffect(() => {
                               ))}
                             </ul>
                           )}
+                          <p className="text-xl font-bold text-white">
+                            Total: R$ {calcularTotalComanda(itensComanda).toFixed(2)}
+                          </p>
                           <button
                             className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded w-full"
                             onClick={() => encerrarComanda(mesaSelecionada)}
@@ -549,12 +561,28 @@ useEffect(() => {
                           </button>
                         </div>
                       ) : (
-                        <button 
-                          className="bg-green-500 hover:bg-green-600 px-4 py-2 rounded w-full mb-2"
-                          onClick={() => abrirMesa(mesaSelecionada)}
+                        <div>
+                          <label className="block text-sm text-white mb-1">Nome do cliente:</label>
+                          <input
+                            type="text"
+                            value={nomeCliente}
+                            onChange={(e) => setNomeCliente(e.target.value)}
+                            className="w-full px-3 py-2 rounded bg-gray-800 text-white border border-gray-600 focus:outline-none focus:ring focus:ring-blue-500"
+                            placeholder="Digite o nome do cliente"
+                          />
+                          <button 
+                            onClick={() => abrirMesa(mesaSelecionada)}
+                            disabled={!nomeCliente.trim()} 
+                            className={`px-4 py-2 rounded w-full mb-2 transition ${
+                              !nomeCliente.trim()
+                                ? "bg-gray-500 cursor-not-allowed"
+                                : "bg-green-500 hover:bg-green-600"
+                            } text-white`}
                           >
-                          Abrir Mesa
-                        </button>
+                            Abrir Mesa
+                          </button>
+                        </div>
+                        
                       )}
                     </div>
                   </div>

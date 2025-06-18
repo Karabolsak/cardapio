@@ -44,7 +44,7 @@ type ItemComanda = {
   id_colaborador: number;
   status: boolean;
 };
-// type Comandas = {
+// type Comanda = {
 //  id: number;
 //  id_mesa: number;
 //  aberta_em: string;
@@ -55,7 +55,13 @@ type ItemComanda = {
 //  status: boolean;
 //  nome_cliente: string;
 //  cpf_cliente: number;
+//  taxa_status: boolean;
+//  taxa_servico?: number;
+//  forma_pagamento: string;
+//  valor_comanda: number;
 // };
+type FormaPagamento = 'dinheiro' | 'cartao_credito' | 'cartao_debito' | 'pix' | 'outro';
+
 
 
 
@@ -75,7 +81,9 @@ type ItemComanda = {
   const [quantidade, setQuantidade] = useState(1);
   const [mensagemSucesso, setMensagemSucesso] = useState<string | null>(null);
   const [nomeCliente, setNomeCliente] = useState("");
-  
+  const [taxaServico, setTaxaServico] = useState<boolean>(false);
+  const taxaPercentual = 0.1; // 10%
+  const [formaPagamento, setFormaPagamento] = useState('');
 
 
   const abrirMesa = async (mesa: Mesa) => {
@@ -97,6 +105,7 @@ type ItemComanda = {
         nome_cliente: nomeCliente,
         aberta_em: new Date().toISOString(),
         status: true,
+        taxa_status: false
       },
     ])
     .select()
@@ -129,42 +138,56 @@ type ItemComanda = {
 
   const comanda = comandasAbertas[0];
 
+  const subtotal = itensComanda.reduce((total, item) => total + (item.quantidade * item.preco_unitario), 0);
+  const valorTaxa = taxaServico ? subtotal * 0.1 : 0;
+  const valorTotal = subtotal + valorTaxa;
+
   const { error: updateComandaError } = await supabase
     .from("comandas")
-    .update({ status: false, fechada_em: new Date().toISOString() })
+    .update({ 
+      status: false, 
+      fechada_em: new Date().toISOString(),
+      taxa_status: taxaServico,
+      taxa_servico: valorTaxa,
+      forma_pagamento: formaPagamento || "não informado",
+      valor_comanda: valorTotal,
+    })
     .eq("id", comanda.id);
 
   if (updateComandaError) {
     console.error("Erro ao fechar comanda:", updateComandaError);
     return;
   }
+  const { error: updateMesaError } = await supabase
+      .from("mesas")
+      .update({ ativa: false })
+      .eq("id", mesa.id);
 
-  
+    if (updateMesaError) {
+      console.error("Erro ao liberar mesa:", updateMesaError);
+      return;
+    }
   const { error: updateItensError } = await supabase
     .from("itens_comanda")
-    .update({ status: "encerrado", encerrado_em: new Date().toISOString() })
+    .update({ 
+      status: "encerrado", 
+      encerrado_em: new Date().toISOString() 
+    })
     .eq("id_comanda", comanda.id);
 
   if (updateItensError) {
     console.warn("Itens não foram encerrados corretamente:", updateItensError);
     
   }
-
-  const { error: updateMesaError } = await supabase
-    .from("mesas")
-    .update({ ativa: false })
-    .eq("id", mesa.id);
-
-  if (updateMesaError) {
-    console.error("Erro ao liberar mesa:", updateMesaError);
-    return;
-  }
-
   const mesasAtualizadas = todasMesas.map((m) =>
     m.id === mesa.id ? { ...m, ativa: false } : m
   );
   setTodasMesas(mesasAtualizadas);
-  setMesaSelecionada({ ...mesa, ativa: false });
+  setMesaSelecionada(null);
+  setTaxaServico(false);
+  setFormaPagamento("");
+  setItensComanda([]);
+  setNomeCliente("");
 
   console.log("Comanda e itens encerrados com sucesso!");
 };
@@ -241,14 +264,11 @@ type ItemComanda = {
     setQuantidade(1);
   }
 };
-  const calcularTotalComanda = (itens: ItemComanda[]) => {
-  return itens.reduce((total, item) => {
-    return total + item.quantidade * item.preco_unitario;
-  }, 0);
+const calcularValorTotal = () => {
+  const subtotal = itensComanda.reduce((total, item) => total + item.quantidade * item.preco_unitario, 0);
+  const taxa = taxaServico ? subtotal * 0.1 : 0;
+  return subtotal + taxa;
 };
-
-
-
 
 
 
@@ -553,7 +573,6 @@ useEffect(() => {
                         </p>
                     </div>
                   ))}
-                
                 </div> 
                 {mesaSelecionada && (
                   <div className="dinamico-comanda">
@@ -571,7 +590,6 @@ useEffect(() => {
                         </button>
                       </div>
                       <p className="mb-4">
-                        
                         <span className={mesaSelecionada.ativa ? "text-red-400" : "text-green-400"}>
                           {mesaSelecionada.ativa ? "" : "Mesa disponível"}
                         </span>
@@ -597,12 +615,48 @@ useEffect(() => {
                               ))}
                             </ul>
                           )}
+                          <div className="flex items-center justify-between">
+                            <label className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                checked={taxaServico}
+                                onChange={() => setTaxaServico(!taxaServico)}
+                                className="h-4 w-4 text-blue-600 rounded"
+                              />
+                              <span>Taxa de serviço ({(taxaPercentual * 100).toFixed(0)}%)</span>
+                            </label>
+                          </div>
                           <div className="text-right">
                             <p className="text-xl font-bold text-white">
-                            Total: R$ {calcularTotalComanda(itensComanda).toFixed(2)}
+                            Total: R$ {calcularValorTotal().toFixed(2)}
                           </p>
                           </div>
+
+                          <div className="mb-4">
+                            <label className="block text-sm font-medium text-white mb-1">
+                              Forma de Pagamento
+                            </label>
+                            <select 
+                              value={formaPagamento}
+                              onChange={(e) => {
+                                setFormaPagamento(e.target.value as FormaPagamento)
+                              }}
+                              className="w-full p-2 rounded bg-gray-700 text-white border border-gray-600"
+                              >
+                              <option value="dinheiro">Dinheiro</option>
+                              <option value="cartao_credito">Cartão de Crédito</option>
+                              <option value="cartao_debito">Cartão de Débito</option>
+                              <option value="pix">PIX</option>
+                              <option value="outro">Outro</option>
+                            </select>
+                          </div>
                           
+                          
+                          
+                        
+                        
+                          
+
                           <button
                             className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded w-full"
                             onClick={() => encerrarComanda(mesaSelecionada)}
@@ -635,7 +689,6 @@ useEffect(() => {
                             Abrir Mesa
                           </button>
                         </div>
-                        
                       )}
                     </div>
                   </div>

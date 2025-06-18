@@ -1,31 +1,24 @@
-
 .conteudoClientes {
    display: flex;
     flex-direction: row;
     align-items: center;
     justify-content: center;
-}
-.conteudoClientes p {
+}.conteudoClientes p {
     padding: 5px;
     border: 1px solid white;   
-}
-.conteudoClientes li {
+}.conteudoClientes li {
     padding: 10px;
-}
-.tabela {
+}.tabela {
     background-color: rgba(0, 0, 0, 0.2);
-}
-.conteudo-mesas {
+}.conteudo-mesas {
   display: flex;
-}
-.catalogo-grid {
+}.catalogo-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 24px;
   padding: 20px;
   width: 80%;
-}
-.item-card {
+}.item-card {
   background-color: #2d2d2d;
   color: white;
   border-radius: 12px;
@@ -36,49 +29,40 @@
   flex-direction: column;
   transition: transform 0.2s ease;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-}
-.item-card:hover {
+}.item-card:hover {
   transform: scale(1.05);
-}
-.item-img {
+}.item-img {
   width: 100%;
   height: 160px;
 
   object-fit: scale-down;
   border-radius: 8px;
   margin-bottom: 12px;
-}
-.item-card p {
+}.item-card p {
   margin: 0;
   text-align: left;
   font-style: italic;
-}
-.item-card h3 {
+}.item-card h3 {
   margin-top: 5px;
   margin-bottom: 5px;
-}
-.item-card h4 {
+}.item-card h4 {
   margin: 0;  
-}
-.item-card h5 {
+}.item-card h5 {
   font-weight: 500;
   margin: 0;
   padding-bottom: 5px;
-}
-.preco {
+}.preco {
   color: #00E676;
   font-size: 1.5rem;
   display: flex;
   align-items: center;
   gap: 40px;
-}
-.catalogo-gridMesas {
+}.catalogo-gridMesas {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 1.5rem;
   width: 80%;
-}
-.mesa {
+}.mesa {
   position: relative;
   padding: 20px;
   border-radius: 12px;
@@ -89,16 +73,14 @@
   cursor: pointer;
   overflow: visible;
   transition: transform 0.3s ease;
-}
-.mesa-livre {
-  background-color: #1a4d1a; /* verde escuro */
+}.mesa-livre {
+  background-color: #1a4d1a; 
   box-shadow:
     0 0 10px 2px rgba(0, 255, 0, 0.5),
     0 0 20px 6px rgba(0, 255, 0, 0.3);
   animation: fumaça-verde 4s ease-in-out infinite;
-}
-.mesa-ocupada {
-  background-color: #4d1a1a; /* vermelho escuro */
+}.mesa-ocupada {
+  background-color: #4d1a1a; 
   box-shadow:
     0 0 10px 2px rgba(255, 0, 0, 0.5),
     0 0 20px 6px rgba(255, 0, 0, 0.3);
@@ -115,8 +97,7 @@
       0 0 15px 5px rgba(0, 255, 0, 0.7),
       0 0 30px 1px rgba(0, 255, 0, 0.5);
   }
-}
-@keyframes fumaça-vermelha {
+}@keyframes fumaça-vermelha {
   0%, 100% {
     box-shadow:
       0 0 10px 2px rgba(255, 0, 0, 0.5),
@@ -132,12 +113,10 @@
   transform: scale(1.05);
   box-shadow:
     0 0 25px 10px rgba(255, 255, 255, 0.8);
-}
-.catalogo-grid p {
+}.catalogo-grid p {
   font-size: medium;
   font-style: italic;
-}
-.dinamico-comanda {
+}.dinamico-comanda {
   background-color: #242424;
   padding: 10px;
   width: 20%;
@@ -147,24 +126,47 @@
 .dinamico-comanda P {
   margin: 0;
 }
+.dinamico-comanda li {
+  padding: 0px;
+}
 .conteudo-produtos {
   display: flex;
-}
-.dinamico-produto {
+}.dinamico-produto {
   background-color: #242424;
   padding: 10px;
   width: 20vw;
   margin-right: 20px;
   border-radius: 20px;
-}
-.descritivo-produtos {
+}.descritivo-produtos {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-}
-.descritivo-produtos p {
+}.descritivo-produtos p {
   margin: 0;
-}
-.img-prod {
+}.img-prod {
   width: 70px;
+}.nomeCliente {
+  font-size: small;
+}.input-estilizado {
+  width: 70%;
+  padding: 0.5rem 0.75rem;
+  margin: 10px;
+  border-radius: 0.25rem;
+  background-color: #1f2937;
+  color: #ffffff;
+  border: 1px solid #4b5563;
+}.input-estilizado:focus {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);
+  --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(3px + var(--tw-ring-offset-width)) var(--tw-ring-color);
+  box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
+  --tw-ring-color: #3b82f6;
+}.item-comanda::after {
+  content: "";
+  display: block;
+  height: 1px;
+  background: repeating-linear-gradient(to right, #6b7280 0, #6b7280 4px, transparent 4px, transparent 8px);
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
 }

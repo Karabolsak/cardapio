@@ -44,6 +44,20 @@ type ItemComanda = {
   id_colaborador: number;
   status: boolean;
 };
+// type Comandas = {
+//  id: number;
+//  id_mesa: number;
+//  aberta_em: string;
+//  fechada_em: string;
+//  observacoes: string;
+//  id_colaborador: number;
+//  id_loja: number;
+//  status: boolean;
+//  nome_cliente: string;
+//  cpf_cliente: number;
+// };
+
+
 
   const [produtos, setProdutos] = useState<Produto[]>([])
   const [clientes, setClientes] = useState<Cliente[]>([]);
@@ -62,6 +76,8 @@ type ItemComanda = {
   const [mensagemSucesso, setMensagemSucesso] = useState<string | null>(null);
   const [nomeCliente, setNomeCliente] = useState("");
   
+
+
   const abrirMesa = async (mesa: Mesa) => {
     const { error: errorMesa } = await supabase
     .from("mesas")
@@ -78,7 +94,7 @@ type ItemComanda = {
       {
         id_mesa: mesa.id,
         id_loja: mesa.id_loja,
-        cpf_cliente: nomeCliente,
+        nome_cliente: nomeCliente,
         aberta_em: new Date().toISOString(),
         status: true,
       },
@@ -152,41 +168,40 @@ type ItemComanda = {
 
   console.log("Comanda e itens encerrados com sucesso!");
 };
-  const carregarItensDaComanda = async (mesa: Mesa) => {
-  const { data: comandasAbertas, error: fetchError } = await supabase
-    .from("comandas")
-    .select("*")
-    .eq("id_mesa", mesa.id)
-    .eq("status", true);
+//  const carregarItensDaComanda = async (mesa: Mesa) => {
+//  const { data: comandasAbertas, error: fetchError } = await supabase
+//    .from("comandas")
+//    .select("*")
+//    .eq("id_mesa", mesa.id)
+//    .eq("status", true);
 
-  if (fetchError || !comandasAbertas || comandasAbertas.length === 0) {
-    console.error("Nenhuma comanda aberta encontrada:", fetchError);
-    setItensComanda([]);
-    return;
-  }
+//  if (fetchError || !comandasAbertas || comandasAbertas.length === 0) {
+//    console.error("Nenhuma comanda aberta encontrada:", fetchError);
+//    setItensComanda([]);
+//    return;
+//  }
 
-  const comanda = comandasAbertas[0];
-  setIdComandaSelecionada(comanda.id);
+//  const comanda = comandasAbertas[0];
+//  setIdComandaSelecionada(comanda.id);
 
-  const { data: itens, error: itensError } = await supabase
-  .from("itens_comanda")
-  .select("id, id_produto, nome_produto, quantidade, preco_unitario, adicionado_em, id_colaborador, status")
-  .eq("id_comanda", comanda.id);
+//  const { data: itens, error: itensError } = await supabase
+//  .from("itens_comanda")
+//  .select("id, id_produto, nome_produto, quantidade, preco_unitario, adicionado_em, id_colaborador, status")
+//  .eq("id_comanda", comanda.id);
 
 
-  if (itensError) {
-    console.error("Erro ao buscar itens da comanda:", itensError);
-    return;
-  }
+//  if (itensError) {
+//    console.error("Erro ao buscar itens da comanda:", itensError);
+//    return;
+//  }
 
-  setItensComanda(itens || [0]);
-};
+//  setItensComanda(itens || [0]);
+//};
   const adicionarItemNaComanda = async () => {
   if (!itemSelecionado || !mesaParaAdicionar) {
     alert("Selecione um produto e uma mesa para adicionar o item.");
     return;
   }
-
   const { data: comandaVinculada, error: errorComanda } = await supabase
     .from('comandas')
     .select('id')
@@ -226,11 +241,13 @@ type ItemComanda = {
     setQuantidade(1);
   }
 };
-const calcularTotalComanda = (itens: ItemComanda[]) => {
+  const calcularTotalComanda = (itens: ItemComanda[]) => {
   return itens.reduce((total, item) => {
     return total + item.quantidade * item.preco_unitario;
   }, 0);
 };
+
+
 
 
 
@@ -297,11 +314,40 @@ useEffect(() => {
 
   fetchLojaEMesas();
 }, []);
+
 useEffect(() => {
-  if (mesaSelecionada && mesaSelecionada.ativa) {
-    carregarItensDaComanda(mesaSelecionada);
+  if (!mesaSelecionada || !mesaSelecionada.ativa) {
+    setItensComanda([]);
+    setNomeCliente("");
+    setIdComandaSelecionada(null);
+    return;
   }
+
+  const carregarDadosMesa = async () => {
+    // 1. Busca a comanda (com nome_cliente garantido)
+    const { data: comanda } = await supabase
+      .from('comandas')
+      .select('id, nome_cliente')
+      .eq('id_mesa', mesaSelecionada.id)
+      .eq('status', true)
+      .single();
+
+    // 2. Atualiza nome do cliente (sem verificação pois sabemos que existe)
+    setNomeCliente(comanda?.nome_cliente);
+    setIdComandaSelecionada(comanda?.id);
+
+    // 3. Busca os itens
+    const { data: itens } = await supabase
+      .from('itens_comanda')
+      .select('*')
+      .eq('id_comanda', comanda?.id);
+
+    setItensComanda(itens || []);
+  };
+
+  carregarDadosMesa();
 }, [mesaSelecionada]);
+
 useEffect(() => {
   if (itemSelecionado && itemSelecionado?.id) {
     setItemSelecionado(itemSelecionado);
@@ -516,6 +562,7 @@ useEffect(() => {
                         <h2 className="text-2xl font-bold">
                         Mesa #{mesaSelecionada.numero} 
                         </h2>
+                        {mesaSelecionada.ativa ? nomeCliente  : ""}
                         <button
                           onClick={() => setMesaSelecionada(null)}
                           className="text-gray-400 hover:text-white text-xl"
@@ -524,14 +571,13 @@ useEffect(() => {
                         </button>
                       </div>
                       <p className="mb-4">
-                        Status:{" "}
+                        
                         <span className={mesaSelecionada.ativa ? "text-red-400" : "text-green-400"}>
-                          {mesaSelecionada.ativa ? "Ocupada" : "Livre"}
+                          {mesaSelecionada.ativa ? "" : "Mesa disponível"}
                         </span>
                       </p>
                       {mesaSelecionada.ativa ? (
                         <div>
-                          <p>Cliente: {nomeCliente}</p>
                           <p>Comanda: {idComandaSelecionada?.toString().slice(0, 5)}</p>
                           <p className="font-semibold mb-2">Itens da comanda:</p>
                           {itensComanda.length === 0 ? (
@@ -539,7 +585,7 @@ useEffect(() => {
                           ) : (
                             <ul className="mb-4 space-y-2">
                               {itensComanda.map((item) => (
-                                <li key={item.id} className="bg-gray-700 p-3 rounded">
+                                <li key={item.id} className="item-comanda bg-gray-700 p-3 rounded">
                                   <div className="flex justify-between">
                                     <span>{item.nome_produto}</span>
                                     <span>
@@ -547,12 +593,16 @@ useEffect(() => {
                                     </span>
                                   </div>
                                 </li>
+                                
                               ))}
                             </ul>
                           )}
-                          <p className="text-xl font-bold text-white">
+                          <div className="text-right">
+                            <p className="text-xl font-bold text-white">
                             Total: R$ {calcularTotalComanda(itensComanda).toFixed(2)}
                           </p>
+                          </div>
+                          
                           <button
                             className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded w-full"
                             onClick={() => encerrarComanda(mesaSelecionada)}
@@ -562,12 +612,15 @@ useEffect(() => {
                         </div>
                       ) : (
                         <div>
-                          <label className="block text-sm text-white mb-1">Nome do cliente:</label>
                           <input
                             type="text"
                             value={nomeCliente}
-                            onChange={(e) => setNomeCliente(e.target.value)}
-                            className="w-full px-3 py-2 rounded bg-gray-800 text-white border border-gray-600 focus:outline-none focus:ring focus:ring-blue-500"
+                            onChange={(e) => {
+                              const texto = e.target.value;
+                              const textoFormatado = texto.charAt(0).toUpperCase() + texto.slice(1);
+                              setNomeCliente(textoFormatado);
+                            }}
+                            className="input-estilizado"
                             placeholder="Digite o nome do cliente"
                           />
                           <button 

@@ -81,10 +81,16 @@ type FormaPagamento = 'dinheiro' | 'cartao_credito' | 'cartao_debito' | 'pix' | 
   const [quantidade, setQuantidade] = useState(1);
   const [mensagemSucesso, setMensagemSucesso] = useState<string | null>(null);
   const [nomeCliente, setNomeCliente] = useState("");
+  const [cpfCliente, setCpfCliente] = useState<string | ''>('');
   const [taxaServico, setTaxaServico] = useState<boolean>(false);
   const taxaPercentual = 0.1; // 10%
   const [formaPagamento, setFormaPagamento] = useState('');
-
+  const [valorPago, setValorPago] = useState<number | ''>('');
+  const cpfLimpo = cpfCliente.replace(/\D/g, ""); // "12345678900"
+  const [telefoneCliente, setTelefoneCliente] = useState("");
+  const [cadastroClienteAtivo, setCadastroClienteAtivo] = useState(false);
+  const [nascimentoCliente, setNascimentoCliente] = useState<string>('');
+  const [emailCliente, setEmailCliente] = useState<string>('');
 
   const abrirMesa = async (mesa: Mesa) => {
     const { error: errorMesa } = await supabase
@@ -95,7 +101,7 @@ type FormaPagamento = 'dinheiro' | 'cartao_credito' | 'cartao_debito' | 'pix' | 
     if (errorMesa) {
       console.error("Erro ao ativar mesa:", errorMesa);
     }
-    
+
     const { data: novaComanda, error: errorComanda } = await supabase
     .from("comandas")
     .insert([
@@ -105,7 +111,8 @@ type FormaPagamento = 'dinheiro' | 'cartao_credito' | 'cartao_debito' | 'pix' | 
         nome_cliente: nomeCliente,
         aberta_em: new Date().toISOString(),
         status: true,
-        taxa_status: false
+        taxa_status: false,
+        cpf_cliente: cpfLimpo,
       },
     ])
     .select()
@@ -140,7 +147,7 @@ type FormaPagamento = 'dinheiro' | 'cartao_credito' | 'cartao_debito' | 'pix' | 
 
   const subtotal = itensComanda.reduce((total, item) => total + (item.quantidade * item.preco_unitario), 0);
   const valorTaxa = taxaServico ? subtotal * 0.1 : 0;
-  const valorTotal = subtotal + valorTaxa;
+  const valorPago = subtotal + valorTaxa;
 
   const { error: updateComandaError } = await supabase
     .from("comandas")
@@ -150,7 +157,7 @@ type FormaPagamento = 'dinheiro' | 'cartao_credito' | 'cartao_debito' | 'pix' | 
       taxa_status: taxaServico,
       taxa_servico: valorTaxa,
       forma_pagamento: formaPagamento || "não informado",
-      valor_comanda: valorTotal,
+      valor_comanda: valorPago,
     })
     .eq("id", comanda.id);
 
@@ -264,11 +271,66 @@ type FormaPagamento = 'dinheiro' | 'cartao_credito' | 'cartao_debito' | 'pix' | 
     setQuantidade(1);
   }
 };
-const calcularValorTotal = () => {
+  const calcularValorTotal = () => {
   const subtotal = itensComanda.reduce((total, item) => total + item.quantidade * item.preco_unitario, 0);
   const taxa = taxaServico ? subtotal * 0.1 : 0;
   return subtotal + taxa;
 };
+  const formatarCPF = (valor: string) => {
+  const numeros = valor.replace(/\D/g, "").slice(0, 11); // Máximo de 11 dígitos
+
+  if (numeros.length <= 3) return numeros;
+  if (numeros.length <= 6) return `${numeros.slice(0, 3)}.${numeros.slice(3)}`;
+  if (numeros.length <= 9) return `${numeros.slice(0, 3)}.${numeros.slice(3, 6)}.${numeros.slice(6)}`;
+  return `${numeros.slice(0, 3)}.${numeros.slice(3, 6)}.${numeros.slice(6, 9)}-${numeros.slice(9, 11)}`;
+};
+const verificarOuCadastrarCliente = async () => {
+  if (!cpfCliente.trim() || !nomeCliente.trim()) {
+    alert("Preencha o nome e CPF do cliente.");
+    return;
+  }
+
+  const { data: clienteExistente, error } = await supabase
+    .from('clientes')
+    .select('*')
+    .eq('cpf', cpfCliente)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Erro ao verificar cliente:", error);
+    alert("Erro ao verificar o cliente.");
+    return;
+  }
+
+  if (clienteExistente) {
+    // Cliente já existe → abrir mesa diretamente
+    abrirMesa(mesaSelecionada!);
+  } else {
+    // Cliente não existe → ativar formulário para cadastrar
+    setCadastroClienteAtivo(true);
+  }
+};
+const cadastrarCliente = async ( mesa: Mesa ) => {
+  const { error } = await supabase.from('clientes').insert({
+    nome: nomeCliente,
+    cpf: cpfCliente,
+    telefone: telefoneCliente,
+    nascimento: nascimentoCliente,
+    email: emailCliente,
+    id_loja: mesa.id_loja,
+  });
+
+  if (error) {
+    console.error("Erro ao cadastrar cliente:", error);
+    alert("Erro ao cadastrar cliente");
+    return;
+  }
+
+  setCadastroClienteAtivo(false);
+  abrirMesa(mesaSelecionada!);
+};
+
+
 
 
 
@@ -643,6 +705,7 @@ useEffect(() => {
                               }}
                               className="w-full p-2 rounded bg-gray-700 text-white border border-gray-600"
                               >
+                              <option value="">Opções</option>
                               <option value="dinheiro">Dinheiro</option>
                               <option value="cartao_credito">Cartão de Crédito</option>
                               <option value="cartao_debito">Cartão de Débito</option>
@@ -650,7 +713,20 @@ useEffect(() => {
                               <option value="outro">Outro</option>
                             </select>
                           </div>
-                          
+                          {formaPagamento === 'pix' && (
+                            <div className="text-left mt-4">
+                              <label className="block text-sm text-white mb-1">Insira o valor recebido:</label>
+                              <input 
+                                type="number"
+                                value={valorPago}
+                                step={'0.01'}
+                                onChange={(e) => setValorPago(Number(e.target.value))}
+                                className="w-full px-3 py-2 rounded bg-gray-800 text-white border border-gray-600 focus:outline-none focus:ring focus:ring-blue-500"
+                                placeholder="Digite o valor"
+                              />
+                            </div>
+                          )}
+
                           
                           
                         
@@ -658,6 +734,7 @@ useEffect(() => {
                           
 
                           <button
+                            type="button"
                             className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded w-full"
                             onClick={() => encerrarComanda(mesaSelecionada)}
                           >
@@ -677,9 +754,18 @@ useEffect(() => {
                             className="input-estilizado"
                             placeholder="Digite o nome do cliente"
                           />
+                          <input
+                            type="text"
+                            value={cpfCliente}
+                            onChange={(e) => setCpfCliente(formatarCPF(e.target.value))}
+                            className="input-estilizado"
+                            maxLength={14} // "000.000.000-00"
+                            placeholder="Digite o CPF do cliente"
+                          />
+
                           <button 
-                            onClick={() => abrirMesa(mesaSelecionada)}
-                            disabled={!nomeCliente.trim()} 
+                            type="button"
+                            onClick={() => verificarOuCadastrarCliente()}
                             className={`px-4 py-2 rounded w-full mb-2 transition ${
                               !nomeCliente.trim()
                                 ? "bg-gray-500 cursor-not-allowed"
@@ -688,6 +774,51 @@ useEffect(() => {
                           >
                             Abrir Mesa
                           </button>
+                          {cadastroClienteAtivo && (
+                            <div className="formulario-cadastro mt-4 space-y-2 bg-gray-800 p-4 rounded">
+                              <label>Nome do cliente:</label>
+                              <input
+                                type="text"
+                                value={nomeCliente}
+                                onChange={(e) => setNomeCliente(e.target.value)}
+                                className="input-estilizado"
+                              />
+
+                              <label>Telefone (opcional):</label>
+                              <input
+                                type="text"
+                                value={telefoneCliente}
+                                onChange={(e) => setTelefoneCliente(e.target.value)}
+                                className="input-estilizado"
+                              />
+
+                              <label>Data de nascimento:</label>
+                              <input
+                                type="date"
+                                value={nascimentoCliente}
+                                onChange={(e) => setNascimentoCliente(e.target.value)}
+                                className="input-estilizado"
+                              />
+
+                              <label>E-mail:</label>
+                              <input
+                                type="email"
+                                value={emailCliente}
+                                onChange={(e) => setEmailCliente(e.target.value)}
+                                className="input-estilizado"
+                              />
+
+                              <button
+                                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded w-full mt-2"
+                                disabled={!nomeCliente.trim()}
+                                onClick={() => cadastrarCliente(mesaSelecionada)}
+                              >
+                                Cadastrar Cliente e Abrir Mesa
+                              </button>
+                            </div>
+                          )}
+
+
                         </div>
                       )}
                     </div>

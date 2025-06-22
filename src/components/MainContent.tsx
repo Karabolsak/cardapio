@@ -3,7 +3,6 @@ import "./maincontent.css";
 import { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient"
 import shopping from "../../src/assets/add-shopping-car.svg"
-import { v4 as uuidv4 } from 'uuid';
 
 export default function MainContent({ selected }: { selected: string }) {
 type Produto = {
@@ -44,11 +43,7 @@ type ItemComanda = {
   id_colaborador: number;
   status: boolean;
 };
-type DivisaoConta = {
-  id: string;
-  valorPago: number;
-  formaPagamento: FormaPagamento;
-};
+
 // type Comanda = {
 //  id: number;
 //  id_mesa: number;
@@ -96,8 +91,8 @@ type FormaPagamento = 'dinheiro' | 'cartao_credito' | 'cartao_debito' | 'pix';
   const [quantidade, setQuantidade] = useState(1);
   const taxaPercentual = 0.1; // 10%
   const cpfLimpo = cpfCliente.replace(/\D/g, "");
-  const [divisoes, setDivisoes] = useState<DivisaoConta[]>([{ id: uuidv4(), valorPago: 0, formaPagamento: 'dinheiro' }]);
   const [valorTexto, setValorTexto] = useState("0");
+  const [formasPagamentosExtras, setFormasPagamentosExtras] = useState<{ forma: string; valor: number }[]>([]);
 
 
   const abrirMesa = async (mesa: Mesa) => {
@@ -156,7 +151,7 @@ type FormaPagamento = 'dinheiro' | 'cartao_credito' | 'cartao_debito' | 'pix';
 
   const subtotal = itensComanda.reduce((total, item) => total + (item.quantidade * item.preco_unitario), 0);
   const valorTaxa = taxaServico ? subtotal * 0.1 : 0;
-  const valorPago = subtotal + valorTaxa;
+  const valorPago = valorTexto;
   const dividirConta = setDividirConta;
 
   const { error: updateComandaError } = await supabase
@@ -387,23 +382,7 @@ const formatarValorMonetario = (valor: string): string => {
   });
 };
 
-const adicionarDivisao = () => {
-  setDivisoes([...divisoes, {
-    id: uuidv4(),
-    valorPago: 0,
-    formaPagamento: 'dinheiro'
-  }]);
-};
 
-const removerDivisao = (id: string) => {
-  setDivisoes(divisoes.filter(div => div.id !== id));
-};
-
-const atualizarDivisao = (id: string, campo: keyof DivisaoConta, valor: any) => {
-  setDivisoes(divisoes.map(div => 
-    div.id === id ? { ...div, [campo]: valor } : div
-  ));
-};
 
 
 
@@ -854,63 +833,53 @@ useEffect(() => {
                                 </div>
                               )}
                           </div>
-                          {divisoes.map((divisao, index) => (
-  <div key={divisao.id} className="space-y-4 mb-6 border p-4 rounded-lg">
-    <h3 className="font-bold">Pagador #{index + 1}</h3>
-    
-    <div>
-      <label className="block text-sm text-white mb-1">Forma de Pagamento</label>
-      <select
-        value={divisao.formaPagamento}
-        onChange={(e) => atualizarDivisao(
-          divisao.id, 
-          'formaPagamento', 
-          e.target.value as FormaPagamento
-        )}
-        className="w-full px-3 py-2 rounded bg-gray-700 text-white border border-gray-600"
-      >
-        <option value="dinheiro">Dinheiro</option>
-        <option value="cartao_credito">Cartão de Crédito</option>
-        <option value="cartao_debito">Cartão de Débito</option>
-        <option value="pix">PIX</option>
-      </select>
-    </div>
+                          {dividirConta && quantidade > 1 && (
+                            <div className="mt-4 space-y-4">
+                              {[...Array(quantidade - 1)].map((_, index) => (
+                                <div key={index} className="bg-gray-700 p-4 rounded">
+                                  <label className="block text-white mb-2">
+                                    Pagamento adicional {index + 2}
+                                  </label>
 
-    <div>
-      <label className="block text-sm text-white mb-1">
-        {divisao.formaPagamento === 'dinheiro' ? 'Valor Recebido' : 'Valor Pago'}
-      </label>
-      <input
-        type="number"
-        min="0"
-        step="0.01"
-        value={divisao.valorPago}
-        onChange={(e) => atualizarDivisao(
-          divisao.id,
-          'valorPago',
-          Number(e.target.value)
-        )}
-        className="w-full px-3 py-2 rounded bg-gray-700 text-white border border-gray-600"
-      />
-    </div>
+                                  <select
+                                    value={formasPagamentosExtras[index]?.forma || ''}
+                                    onChange={(e) => {
+                                      const novasFormas = [...formasPagamentosExtras];
+                                      novasFormas[index] = {
+                                        ...novasFormas[index],
+                                        forma: e.target.value,
+                                      };
+                                      setFormasPagamentosExtras(novasFormas);
+                                    }}
+                                    className="w-full mb-2 px-3 py-2 rounded bg-gray-800 text-white border border-gray-600"
+                                  >
+                                    <option value="">Selecione o tipo</option>
+                                    <option value="dinheiro">Dinheiro</option>
+                                    <option value="pix">Pix</option>
+                                    <option value="cartao_debito">Cartão de Débito</option>
+                                    <option value="carta_credito">Cartão de Crédito</option>
+                                  </select>
 
-    {divisoes.length > 1 && (
-      <button
-        onClick={() => removerDivisao(divisao.id)}
-        className="text-red-400 text-sm hover:text-red-300"
-      >
-        Remover pagador
-      </button>
-    )}
-  </div>
-))}
+                                  <input
+                                    type="text"
+                                    inputMode="numeric"
+                                    value={formatarValorMonetario(valorTexto)}
+                                    onChange={(e) => {
+                                      const texto = e.target.value;
+                                      const numeros = texto.replace(/\D/g, '');
+                                      setValorTexto(numeros);
+                                    }}
+                                    className="w-full px-3 py-2 rounded bg-gray-800 text-white border border-gray-600"
+                                    placeholder="Digite o valor"
+                                  />
 
-<button
-  onClick={adicionarDivisao}
-  className="text-blue-400 hover:text-blue-300 mt-2"
->
-  + Adicionar pagador
-</button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+
+
 
                           <button
                             type="button"

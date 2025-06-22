@@ -3,8 +3,12 @@ import logo from "../assets/restaurante.png";
 import './stylesidebar.css';
 import { supabase } from "../supabaseClient";
 
+
+
+
+
 export default function Sidebar({ onSelect }: { onSelect: (value: string) => void }) {
-  const menus = ['Dashboard', 'Produtos', 'Clientes', 'Mesas', 'Cozinha' ];
+  const menus = ['Dashboard', 'Produtos', 'Clientes', 'Mesas', 'Cozinha', 'Comandas' ];
   const [activeMenu, setActiveMenu] = useState('Dashboard');
   const [loja, setLoja] = useState<any[]> ([])
 

@@ -60,13 +60,11 @@ type ItemComanda = {
 //  forma_pagamento: string;
 //  valor_comanda: number;
 // };
-type FormaPagamento = 'dinheiro' | 'cartao_credito' | 'cartao_debito' | 'pix';
+type FormaPagamento = 'dinheiro' | 'pix' | 'cartao_credito' | 'cartao_debito';
 type PagamentoExtra = {
   forma: FormaPagamento;
   valor: number;
 };
-
-
   
   const [produtos, setProdutos] = useState<Produto[]>([])
   const [clientes, setClientes] = useState<Cliente[]>([]);
@@ -97,7 +95,7 @@ type PagamentoExtra = {
   const [valorTexto, setValorTexto] = useState("0");
   const [formasPagamentosExtras, setFormasPagamentosExtras] = useState<PagamentoExtra[]>([]);
   const [valorPago, setValorPago] = useState<number>(0);
-
+  const [observacoesPedidos, setObservacoesPedidos] = useState<string>('');
 
   const abrirMesa = async (mesa: Mesa) => {
     const { error: errorMesa } = await supabase
@@ -269,6 +267,7 @@ type PagamentoExtra = {
       adicionado_em: new Date().toISOString(),
       status: 'pendente',
       nome_produto: itemSelecionado.nome,
+      observacoes: observacoesPedidos,
     }]);
 
   if (error) {
@@ -284,6 +283,19 @@ type PagamentoExtra = {
   const subtotal = itensComanda.reduce((total, item) => total + item.quantidade * item.preco_unitario, 0);
   const taxa = taxaServico ? subtotal * 0.1 : 0;
   return subtotal + taxa;
+};
+  const calcularValorTaxa = () => {
+    const subtotal = itensComanda.reduce((total, item) => total + item.quantidade * item.preco_unitario, 0);
+    const taxa = taxaServico ? subtotal * 0.1 : 0;
+    return taxa;
+}
+  const formatarValorTaxa = (valor: number): string => {
+    return Number(valor.toFixed(2)).toLocaleString('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
 };
   const formatarCPF = (valor: string) => {
   const numeros = valor.replace(/\D/g, "").slice(0, 11); // Máximo de 11 dígitos
@@ -550,7 +562,8 @@ useEffect(() => {
         <div>
           {itemSelecionado && (
             <div className="dinamico-produto">
-              <div>
+              <p>Adicionar item na mesa</p>
+              <div>              
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-2xl font-bold">{itemSelecionado.nome}</h2>
                   <button
@@ -600,7 +613,7 @@ useEffect(() => {
                   </div>
                     <div className="mb-4">
                       <label className="block text-sm mb-1 text-white">Quantidade:</label>
-                      <div className="flex items-center space-x-3 bg-gray-800 px-4 py-2 rounded w-fit">
+                      <div className="flex items-center space-x-3 bg-gray-800 px-4 py-2 rounded w-fit" >
                         <button
                           onClick={() => setQuantidade((prev) => Math.max(1, prev - 1))}
                           className="text-white text-lg px-2 hover:text-red-400"
@@ -621,6 +634,17 @@ useEffect(() => {
                         </button>
                       </div>
                     </div>
+                    <div className="observacoes-pedidos">
+                      <label>Adicionar observação no pedido</label>
+                      <input 
+                        type="text" 
+                        placeholder="Observações"
+                        value={observacoesPedidos}
+                        required
+                        onChange={(e) => setObservacoesPedidos(e.target.value)}
+                      />
+                    </div>
+
                 </div>
                 <button
                   className={`bg-green-500 hover:bg-green-600 px-4 py-2 rounded w-full ${
@@ -684,7 +708,7 @@ useEffect(() => {
   )
   const renderMesas = () => (
       <div>
-        <h1>Mesas</h1>
+        <h1 className="titulo-mesas">Mesas</h1>
         {loading ? (
           <p>Carregando mesas...</p>
         ) : todasMesas.length === 0 ? (
@@ -762,12 +786,13 @@ useEffect(() => {
                             </label>
                           </div>
                           <div className="text-right">
+                            <span>Taxa: {formatarValorTaxa(calcularValorTaxa())}</span>
+                          </div>
+                          <div className="text-right">
                             <p className="text-xl font-bold text-white">
                               Total: R$ {calcularValorTotal().toFixed(2)}
                             </p>
-                            
                           </div>
-
                           <div className="mb-4">
                             <label className="block text-sm font-medium text-white mb-1">
                               Forma de Pagamento
@@ -849,7 +874,7 @@ useEffect(() => {
                           {dividirConta && quantidade > 1 && (
                             <div className="mt-4 space-y-4">
                               {formasPagamentosExtras.map((pagamento, index) => (
-                                <div key={index} className="bg-gray-700 p-4 rounded">
+                                <div key={index} className="pagamentos-extras">
                                   <label className="block text-white mb-2">
                                     Pagamento adicional {index + 2}
                                   </label>
@@ -872,7 +897,7 @@ useEffect(() => {
                                       </option>
                                     ))}
                                   </select>
-
+                                  <label>Insira o valor recebido: </label>
                                   <input
                                     type="text"
                                     value={pagamento.valor.toLocaleString('pt-BR', {
@@ -1010,7 +1035,9 @@ useEffect(() => {
       case "Mesas":
         return renderMesas()
       case "Cozinha":
-        return <p>Teste</p>        
+        return <p>Teste</p>     
+      case "Comandas": 
+        return <p>Comandas</p>   
       default:
         return <p>Selecione uma opção.</p>
     }

@@ -798,10 +798,10 @@ useEffect(() => {
                                 value={formatarValorMonetario(valorTexto)}
                                 onChange={(e) => {
                                   const novoValor = e.target.value;
-    const apenasNumeros = novoValor.replace(/\D/g, '');
+                                  const apenasNumeros = novoValor.replace(/\D/g, '');
 
-    setValorTexto(apenasNumeros); // mantém apenas os números
-    setValorPago(Number(apenasNumeros) / 100); // valor que vai para o banco
+                                  setValorTexto(apenasNumeros); 
+                                  setValorPago(Number(apenasNumeros) / 100); 
                                 }}
                                 className="w-full px-3 py-2 rounded bg-gray-800 text-white border border-gray-600"
                                 placeholder="Digite o valor"

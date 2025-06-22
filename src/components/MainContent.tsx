@@ -61,10 +61,13 @@ type ItemComanda = {
 //  valor_comanda: number;
 // };
 type FormaPagamento = 'dinheiro' | 'cartao_credito' | 'cartao_debito' | 'pix';
+type PagamentoExtra = {
+  forma: FormaPagamento;
+  valor: number;
+};
 
 
-
-
+  
   const [produtos, setProdutos] = useState<Produto[]>([])
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [mesaSelecionada, setMesaSelecionada] = useState<Mesa | null>(null);
@@ -92,7 +95,8 @@ type FormaPagamento = 'dinheiro' | 'cartao_credito' | 'cartao_debito' | 'pix';
   const taxaPercentual = 0.1; // 10%
   const cpfLimpo = cpfCliente.replace(/\D/g, "");
   const [valorTexto, setValorTexto] = useState("0");
-  const [formasPagamentosExtras, setFormasPagamentosExtras] = useState<{ forma: string; valor: number }[]>([]);
+  const [formasPagamentosExtras, setFormasPagamentosExtras] = useState<PagamentoExtra[]>([]);
+  const [valorPago, setValorPago] = useState<number>(0);
 
 
   const abrirMesa = async (mesa: Mesa) => {
@@ -151,7 +155,6 @@ type FormaPagamento = 'dinheiro' | 'cartao_credito' | 'cartao_debito' | 'pix';
 
   const subtotal = itensComanda.reduce((total, item) => total + (item.quantidade * item.preco_unitario), 0);
   const valorTaxa = taxaServico ? subtotal * 0.1 : 0;
-  const valorPago = valorTexto;
   const dividirConta = setDividirConta;
 
   const { error: updateComandaError } = await supabase
@@ -371,8 +374,7 @@ type FormaPagamento = 'dinheiro' | 'cartao_credito' | 'cartao_debito' | 'pix';
     return `(${numeros.slice(0, 2)}) ${numeros.slice(2, 7)}-${numeros.slice(7)}`;
   }
 };
-  
-const formatarValorMonetario = (valor: string): string => {
+  const formatarValorMonetario = (valor: string): string => {
   const numeros = valor.replace(/\D/g, '') || '0';
   const numero = (Number(numeros) / 100).toFixed(2);
 
@@ -381,17 +383,19 @@ const formatarValorMonetario = (valor: string): string => {
     currency: 'BRL',
   });
 };
+  const formasPagamentoLabels: Record<FormaPagamento, string> = {
+    dinheiro: 'Dinheiro',
+    cartao_credito: 'Cartão de Crédito',
+    cartao_debito: 'Cartão de Débito',
+    pix: 'PIX'
+};
 
 
 
 
 
 
-
-
-
-
-
+//formatação moeda supabase
 
 
 
@@ -458,7 +462,6 @@ useEffect(() => {
 
   fetchLojaEMesas();
 }, []);
-
 useEffect(() => {
   if (!mesaSelecionada || !mesaSelecionada.ativa) {
     setItensComanda([]);
@@ -491,7 +494,6 @@ useEffect(() => {
 
   carregarDadosMesa();
 }, [mesaSelecionada]);
-
 useEffect(() => {
   if (itemSelecionado && itemSelecionado?.id) {
     setItemSelecionado(itemSelecionado);
@@ -509,6 +511,15 @@ useEffect(() => {
   fetchMesasAtivas();
 }, []);
 
+useEffect(() => {
+  if (dividirConta && quantidade > 1) {
+    setFormasPagamentosExtras(
+      Array(quantidade - 1).fill({ forma: 'dinheiro', valor: 0 })
+    );
+  } else {
+    setFormasPagamentosExtras([]);
+  }
+}, [dividirConta, quantidade]);
 
 
 
@@ -786,9 +797,11 @@ useEffect(() => {
                                 inputMode="numeric"
                                 value={formatarValorMonetario(valorTexto)}
                                 onChange={(e) => {
-                                  const texto = e.target.value;
-                                  const numeros = texto.replace(/\D/g, '');
-                                  setValorTexto(numeros);
+                                  const novoValor = e.target.value;
+    const apenasNumeros = novoValor.replace(/\D/g, '');
+
+    setValorTexto(apenasNumeros); // mantém apenas os números
+    setValorPago(Number(apenasNumeros) / 100); // valor que vai para o banco
                                 }}
                                 className="w-full px-3 py-2 rounded bg-gray-800 text-white border border-gray-600"
                                 placeholder="Digite o valor"
@@ -835,44 +848,49 @@ useEffect(() => {
                           </div>
                           {dividirConta && quantidade > 1 && (
                             <div className="mt-4 space-y-4">
-                              {[...Array(quantidade - 1)].map((_, index) => (
+                              {formasPagamentosExtras.map((pagamento, index) => (
                                 <div key={index} className="bg-gray-700 p-4 rounded">
                                   <label className="block text-white mb-2">
                                     Pagamento adicional {index + 2}
                                   </label>
 
                                   <select
-                                    value={formasPagamentosExtras[index]?.forma || ''}
+                                    value={pagamento.forma}
                                     onChange={(e) => {
                                       const novasFormas = [...formasPagamentosExtras];
                                       novasFormas[index] = {
                                         ...novasFormas[index],
-                                        forma: e.target.value,
+                                        forma: e.target.value as FormaPagamento,
                                       };
                                       setFormasPagamentosExtras(novasFormas);
                                     }}
                                     className="w-full mb-2 px-3 py-2 rounded bg-gray-800 text-white border border-gray-600"
                                   >
-                                    <option value="">Selecione o tipo</option>
-                                    <option value="dinheiro">Dinheiro</option>
-                                    <option value="pix">Pix</option>
-                                    <option value="cartao_debito">Cartão de Débito</option>
-                                    <option value="carta_credito">Cartão de Crédito</option>
+                                    {Object.entries(formasPagamentoLabels).map(([value, label]) => (
+                                      <option key={value} value={value}>
+                                        {label}
+                                      </option>
+                                    ))}
                                   </select>
 
                                   <input
                                     type="text"
-                                    inputMode="numeric"
-                                    value={formatarValorMonetario(valorTexto)}
+                                    value={pagamento.valor.toLocaleString('pt-BR', {
+                                      style: 'currency',
+                                      currency: 'BRL'
+                                    })}
                                     onChange={(e) => {
-                                      const texto = e.target.value;
-                                      const numeros = texto.replace(/\D/g, '');
-                                      setValorTexto(numeros);
+                                      const novasFormas = [...formasPagamentosExtras];
+                                      const valor = parseFloat(e.target.value.replace(/\D/g, '')) / 100 || 0;
+                                      novasFormas[index] = {
+                                        ...novasFormas[index],
+                                        valor: valor,
+                                      };
+                                      setFormasPagamentosExtras(novasFormas);
                                     }}
                                     className="w-full px-3 py-2 rounded bg-gray-800 text-white border border-gray-600"
-                                    placeholder="Digite o valor"
+                                    placeholder="R$ 0,00"
                                   />
-
                                 </div>
                               ))}
                             </div>

@@ -173,3 +173,22 @@
 .dinamico-comanda button {
   margin-top: 20px;
 }
+.formulario-Cliente {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.dividir-conta {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-top: 10px;
+}
+.botton-dividir button {
+  margin: 0;
+}
+.terminar-cliente {
+  display: flex;
+    flex-direction: column;
+    align-items: center;
+}

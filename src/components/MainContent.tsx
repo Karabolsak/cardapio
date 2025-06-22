@@ -3,7 +3,7 @@ import "./maincontent.css";
 import { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient"
 import shopping from "../../src/assets/add-shopping-car.svg"
-
+import { v4 as uuidv4 } from 'uuid';
 
 export default function MainContent({ selected }: { selected: string }) {
 type Produto = {
@@ -44,6 +44,11 @@ type ItemComanda = {
   id_colaborador: number;
   status: boolean;
 };
+type DivisaoConta = {
+  id: string;
+  valorPago: number;
+  formaPagamento: FormaPagamento;
+};
 // type Comanda = {
 //  id: number;
 //  id_mesa: number;
@@ -60,7 +65,7 @@ type ItemComanda = {
 //  forma_pagamento: string;
 //  valor_comanda: number;
 // };
-type FormaPagamento = 'dinheiro' | 'cartao_credito' | 'cartao_debito' | 'pix' | 'outro';
+type FormaPagamento = 'dinheiro' | 'cartao_credito' | 'cartao_debito' | 'pix';
 
 
 
@@ -71,26 +76,29 @@ type FormaPagamento = 'dinheiro' | 'cartao_credito' | 'cartao_debito' | 'pix' | 
   const [itensComanda, setItensComanda] = useState<ItemComanda[]>([]);
   const [itemSelecionado, setItemSelecionado] = useState<Produto | null>(null);
   const [loja, setLoja] = useState<Loja[]> ([])
-  const [loadingClientes, setLoadingClientes] = useState(false)
-  const [loadingProdutos, setLoadingProdutos] = useState(false)
-  const [todasMesas, setTodasMesas] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [idComandaSelecionada, setIdComandaSelecionada] = useState<number | null>(null)
   const [mesasAtivas, setMesasAtivas] = useState<Mesa[]>([]);
   const [mesaParaAdicionar, setMesaParaAdicionar] = useState<Mesa | null>(null);
-  const [quantidade, setQuantidade] = useState(1);
+  const [loadingClientes, setLoadingClientes] = useState(false)
+  const [loadingProdutos, setLoadingProdutos] = useState(false)
+  const [taxaServico, setTaxaServico] = useState<boolean>(false);
+  const [dividirConta, setDividirConta] = useState<boolean>(false)
+  const [cadastroClienteAtivo, setCadastroClienteAtivo] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [todasMesas, setTodasMesas] = useState<any[]>([]);
+  const [idComandaSelecionada, setIdComandaSelecionada] = useState<number | null>(null)
   const [mensagemSucesso, setMensagemSucesso] = useState<string | null>(null);
   const [nomeCliente, setNomeCliente] = useState("");
   const [cpfCliente, setCpfCliente] = useState<string | ''>('');
-  const [taxaServico, setTaxaServico] = useState<boolean>(false);
-  const taxaPercentual = 0.1; // 10%
   const [formaPagamento, setFormaPagamento] = useState('');
-  const [valorPago, setValorPago] = useState<number | ''>('');
-  const cpfLimpo = cpfCliente.replace(/\D/g, ""); // "12345678900"
   const [telefoneCliente, setTelefoneCliente] = useState("");
-  const [cadastroClienteAtivo, setCadastroClienteAtivo] = useState(false);
   const [nascimentoCliente, setNascimentoCliente] = useState<string>('');
   const [emailCliente, setEmailCliente] = useState<string>('');
+  const [quantidade, setQuantidade] = useState(1);
+  const taxaPercentual = 0.1; // 10%
+  const cpfLimpo = cpfCliente.replace(/\D/g, "");
+  const [divisoes, setDivisoes] = useState<DivisaoConta[]>([{ id: uuidv4(), valorPago: 0, formaPagamento: 'dinheiro' }]);
+  const [valorTexto, setValorTexto] = useState("0");
+
 
   const abrirMesa = async (mesa: Mesa) => {
     const { error: errorMesa } = await supabase
@@ -113,6 +121,7 @@ type FormaPagamento = 'dinheiro' | 'cartao_credito' | 'cartao_debito' | 'pix' | 
         status: true,
         taxa_status: false,
         cpf_cliente: cpfLimpo,
+        mais_pagantes: false,
       },
     ])
     .select()
@@ -148,6 +157,7 @@ type FormaPagamento = 'dinheiro' | 'cartao_credito' | 'cartao_debito' | 'pix' | 
   const subtotal = itensComanda.reduce((total, item) => total + (item.quantidade * item.preco_unitario), 0);
   const valorTaxa = taxaServico ? subtotal * 0.1 : 0;
   const valorPago = subtotal + valorTaxa;
+  const dividirConta = setDividirConta;
 
   const { error: updateComandaError } = await supabase
     .from("comandas")
@@ -158,6 +168,7 @@ type FormaPagamento = 'dinheiro' | 'cartao_credito' | 'cartao_debito' | 'pix' | 
       taxa_servico: valorTaxa,
       forma_pagamento: formaPagamento || "não informado",
       valor_comanda: valorPago,
+      mais_pagantes: dividirConta,
     })
     .eq("id", comanda.id);
 
@@ -284,7 +295,7 @@ type FormaPagamento = 'dinheiro' | 'cartao_credito' | 'cartao_debito' | 'pix' | 
   if (numeros.length <= 9) return `${numeros.slice(0, 3)}.${numeros.slice(3, 6)}.${numeros.slice(6)}`;
   return `${numeros.slice(0, 3)}.${numeros.slice(3, 6)}.${numeros.slice(6, 9)}-${numeros.slice(9, 11)}`;
 };
-const verificarOuCadastrarCliente = async () => {
+  const verificarOuCadastrarCliente = async () => {
   if (!cpfCliente.trim() || !nomeCliente.trim()) {
     alert("Preencha o nome e CPF do cliente.");
     return;
@@ -310,7 +321,7 @@ const verificarOuCadastrarCliente = async () => {
     setCadastroClienteAtivo(true);
   }
 };
-const cadastrarCliente = async ( mesa: Mesa ) => {
+  const cadastrarCliente = async ( mesa: Mesa ) => {
   const { error } = await supabase.from('clientes').insert({
     nome: nomeCliente,
     cpf: cpfCliente,
@@ -329,6 +340,78 @@ const cadastrarCliente = async ( mesa: Mesa ) => {
   setCadastroClienteAtivo(false);
   abrirMesa(mesaSelecionada!);
 };
+  const validarCamposObrigatorios = () => {
+    if (!nomeCliente.trim()) {
+      alert("Preencha o nome do cliente");
+      return false;
+    }
+    if (!cpfCliente.trim()) {
+      alert("Preencha o CPF do cliente");
+      return false;
+    }
+    if (!nascimentoCliente.trim()) {
+      alert("Preencha a data de nascimento");
+      return false;
+    }
+    if (!emailCliente.trim()) {
+      alert("Preencha o e-mail do cliente");
+      return false;
+    }
+    return true;
+};
+  const handleCadastrarCliente = () => {
+    if (!validarCamposObrigatorios()) return;
+    cadastrarCliente(mesaSelecionada!); // essa é sua função existente
+};
+  const formatarCelular = (valor: string) => {
+  const numeros = valor.replace(/\D/g, '').slice(0, 11); // só números, no máx 11 dígitos
+
+  if (numeros.length <= 2) {
+    return `(${numeros}`;
+  } else if (numeros.length <= 6) {
+    return `(${numeros.slice(0, 2)}) ${numeros.slice(2)}`;
+  } else if (numeros.length <= 10) {
+    return `(${numeros.slice(0, 2)}) ${numeros.slice(2, 6)}-${numeros.slice(6)}`;
+  } else {
+    return `(${numeros.slice(0, 2)}) ${numeros.slice(2, 7)}-${numeros.slice(7)}`;
+  }
+};
+  
+const formatarValorMonetario = (valor: string): string => {
+  const numeros = valor.replace(/\D/g, '') || '0';
+  const numero = (Number(numeros) / 100).toFixed(2);
+
+  return Number(numero).toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  });
+};
+
+const adicionarDivisao = () => {
+  setDivisoes([...divisoes, {
+    id: uuidv4(),
+    valorPago: 0,
+    formaPagamento: 'dinheiro'
+  }]);
+};
+
+const removerDivisao = (id: string) => {
+  setDivisoes(divisoes.filter(div => div.id !== id));
+};
+
+const atualizarDivisao = (id: string, campo: keyof DivisaoConta, valor: any) => {
+  setDivisoes(divisoes.map(div => 
+    div.id === id ? { ...div, [campo]: valor } : div
+  ));
+};
+
+
+
+
+
+
+
+
 
 
 
@@ -690,8 +773,9 @@ useEffect(() => {
                           </div>
                           <div className="text-right">
                             <p className="text-xl font-bold text-white">
-                            Total: R$ {calcularValorTotal().toFixed(2)}
-                          </p>
+                              Total: R$ {calcularValorTotal().toFixed(2)}
+                            </p>
+                            
                           </div>
 
                           <div className="mb-4">
@@ -707,31 +791,126 @@ useEffect(() => {
                               >
                               <option value="">Opções</option>
                               <option value="dinheiro">Dinheiro</option>
-                              <option value="cartao_credito">Cartão de Crédito</option>
+                              <option value="pix">Pix</option>
                               <option value="cartao_debito">Cartão de Débito</option>
-                              <option value="pix">PIX</option>
-                              <option value="outro">Outro</option>
+                              <option value="cartao_credito">Cartão de Crédito</option>
                             </select>
                           </div>
+
+                          
                           {formaPagamento === 'pix' && (
                             <div className="text-left mt-4">
                               <label className="block text-sm text-white mb-1">Insira o valor recebido:</label>
-                              <input 
-                                type="number"
-                                value={valorPago}
-                                step={'0.01'}
-                                onChange={(e) => setValorPago(Number(e.target.value))}
-                                className="w-full px-3 py-2 rounded bg-gray-800 text-white border border-gray-600 focus:outline-none focus:ring focus:ring-blue-500"
+                              <input
+                                type="text"
+                                id="1"
+                                inputMode="numeric"
+                                value={formatarValorMonetario(valorTexto)}
+                                onChange={(e) => {
+                                  const texto = e.target.value;
+                                  const numeros = texto.replace(/\D/g, '');
+                                  setValorTexto(numeros);
+                                }}
+                                className="w-full px-3 py-2 rounded bg-gray-800 text-white border border-gray-600"
                                 placeholder="Digite o valor"
                               />
                             </div>
                           )}
 
                           
+
                           
                         
                         
-                          
+                          <div className="dividir-conta">
+                              <label className="text-white mr-2">Dividir conta?</label>
+                              <input 
+                                type="checkbox" 
+                                checked={dividirConta}
+                                onChange={() => setDividirConta(!dividirConta)}
+                                className="h-4 w-4 text-blue-600 rounded"
+                              />
+
+                              {dividirConta && (
+                                <div className="botton-dividir">
+                                  <button
+                                    onClick={() => setQuantidade((prev) => Math.max(1, prev - 1))}
+                                    className="text-white text-lg px-2 hover:text-red-400"
+                                    style={{ marginRight: 15 }}
+                                  >
+                                    −
+                                  </button>
+                                  <span 
+                                    className="text-white font-semibold"
+                                    style={{ marginRight: 15 }}>
+                                      {quantidade}
+                                  </span>
+                                  <button
+                                    onClick={() => setQuantidade((prev) => prev + 1)}
+                                    className="text-white text-lg px-2 hover:text-green-400"
+                                  >
+                                    +
+                                  </button>
+                                </div>
+                              )}
+                          </div>
+                          {divisoes.map((divisao, index) => (
+  <div key={divisao.id} className="space-y-4 mb-6 border p-4 rounded-lg">
+    <h3 className="font-bold">Pagador #{index + 1}</h3>
+    
+    <div>
+      <label className="block text-sm text-white mb-1">Forma de Pagamento</label>
+      <select
+        value={divisao.formaPagamento}
+        onChange={(e) => atualizarDivisao(
+          divisao.id, 
+          'formaPagamento', 
+          e.target.value as FormaPagamento
+        )}
+        className="w-full px-3 py-2 rounded bg-gray-700 text-white border border-gray-600"
+      >
+        <option value="dinheiro">Dinheiro</option>
+        <option value="cartao_credito">Cartão de Crédito</option>
+        <option value="cartao_debito">Cartão de Débito</option>
+        <option value="pix">PIX</option>
+      </select>
+    </div>
+
+    <div>
+      <label className="block text-sm text-white mb-1">
+        {divisao.formaPagamento === 'dinheiro' ? 'Valor Recebido' : 'Valor Pago'}
+      </label>
+      <input
+        type="number"
+        min="0"
+        step="0.01"
+        value={divisao.valorPago}
+        onChange={(e) => atualizarDivisao(
+          divisao.id,
+          'valorPago',
+          Number(e.target.value)
+        )}
+        className="w-full px-3 py-2 rounded bg-gray-700 text-white border border-gray-600"
+      />
+    </div>
+
+    {divisoes.length > 1 && (
+      <button
+        onClick={() => removerDivisao(divisao.id)}
+        className="text-red-400 text-sm hover:text-red-300"
+      >
+        Remover pagador
+      </button>
+    )}
+  </div>
+))}
+
+<button
+  onClick={adicionarDivisao}
+  className="text-blue-400 hover:text-blue-300 mt-2"
+>
+  + Adicionar pagador
+</button>
 
                           <button
                             type="button"
@@ -742,10 +921,11 @@ useEffect(() => {
                           </button>
                         </div>
                       ) : (
-                        <div>
+                        <div className="formulario-Cliente">
                           <input
                             type="text"
                             value={nomeCliente}
+                            required
                             onChange={(e) => {
                               const texto = e.target.value;
                               const textoFormatado = texto.charAt(0).toUpperCase() + texto.slice(1);
@@ -757,9 +937,10 @@ useEffect(() => {
                           <input
                             type="text"
                             value={cpfCliente}
+                            required
                             onChange={(e) => setCpfCliente(formatarCPF(e.target.value))}
                             className="input-estilizado"
-                            maxLength={14} // "000.000.000-00"
+                            maxLength={14}
                             placeholder="Digite o CPF do cliente"
                           />
 
@@ -775,23 +956,24 @@ useEffect(() => {
                             Abrir Mesa
                           </button>
                           {cadastroClienteAtivo && (
-                            <div className="formulario-cadastro mt-4 space-y-2 bg-gray-800 p-4 rounded">
+                            <div className="terminar-cliente">
                               <label>Nome do cliente:</label>
                               <input
                                 type="text"
                                 value={nomeCliente}
                                 onChange={(e) => setNomeCliente(e.target.value)}
+                                required
                                 className="input-estilizado"
                               />
-
-                              <label>Telefone (opcional):</label>
+                              <label>Telefone:</label>
                               <input
                                 type="text"
                                 value={telefoneCliente}
-                                onChange={(e) => setTelefoneCliente(e.target.value)}
+                                onChange={(e) => setTelefoneCliente(formatarCelular(e.target.value))}
+                                required
                                 className="input-estilizado"
+                                placeholder="(xx) xxxxx-xxxx"
                               />
-
                               <label>Data de nascimento:</label>
                               <input
                                 type="date"
@@ -799,26 +981,23 @@ useEffect(() => {
                                 onChange={(e) => setNascimentoCliente(e.target.value)}
                                 className="input-estilizado"
                               />
-
                               <label>E-mail:</label>
                               <input
                                 type="email"
                                 value={emailCliente}
                                 onChange={(e) => setEmailCliente(e.target.value)}
                                 className="input-estilizado"
+                                placeholder="exemplo@mail.com"
                               />
-
                               <button
                                 className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded w-full mt-2"
                                 disabled={!nomeCliente.trim()}
-                                onClick={() => cadastrarCliente(mesaSelecionada)}
+                                onClick={handleCadastrarCliente}
                               >
                                 Cadastrar Cliente e Abrir Mesa
                               </button>
                             </div>
                           )}
-
-
                         </div>
                       )}
                     </div>

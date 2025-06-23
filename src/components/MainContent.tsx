@@ -98,6 +98,9 @@ type PagamentoExtra = {
   const [valorPago, setValorPago] = useState<number>(0);
   const [observacoesPedidos, setObservacoesPedidos] = useState<string>('');
 
+
+
+  
   const abrirMesa = async (mesa: Mesa) => {
     const { error: errorMesa } = await supabase
     .from("mesas")
@@ -406,7 +409,7 @@ type PagamentoExtra = {
 
 
 
-// ARRAY DE PAGAMENTOS FALTA LOGICA AINDA
+// ARRAY DE PAGAMENTOS FALTA LOGICA AQUI
 
 
 

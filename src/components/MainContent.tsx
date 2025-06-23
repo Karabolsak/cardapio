@@ -99,7 +99,6 @@ type PagamentoExtra = {
   const [observacoesPedidos, setObservacoesPedidos] = useState<string>('');
 
 
-
   
   const abrirMesa = async (mesa: Mesa) => {
     const { error: errorMesa } = await supabase
@@ -289,10 +288,16 @@ type PagamentoExtra = {
   return subtotal + taxa;
 };
   const calcularValorTaxa = () => {
-    const subtotal = itensComanda.reduce((total, item) => total + item.quantidade * item.preco_unitario, 0);
-    const taxa = taxaServico ? subtotal * 0.1 : 0;
-    return taxa;
-}
+  const subtotal = itensComanda.reduce(
+    (total, item) => total + item.quantidade * item.preco_unitario,
+    0
+  );
+
+  const taxa = taxaServico ? subtotal * 0.1 : 0;
+
+  return Number(taxa.toFixed(2)); // 👈 garante duas casas decimais sem “zebras”
+};
+
   const formatarValorTaxa = (valor: number): string => {
     return Number(valor.toFixed(2)).toLocaleString('pt-BR', {
       style: 'currency',
@@ -406,10 +411,20 @@ type PagamentoExtra = {
     pix: 'PIX'
 };
 
+const calcularTotalPago = (): number => {
+  const extras = formasPagamentosExtras.reduce((acc, item) => acc + item.valor, 0);
+  return valorPago + extras;
+};
+
+const calcularValorRestante = (): number => {
+  return calcularValorTotal() - calcularTotalPago();
+};
 
 
 
-// ARRAY DE PAGAMENTOS FALTA LOGICA AQUI
+
+
+// FUNCIONOU
 
 
 
@@ -837,7 +852,6 @@ useEffect(() => {
                                     />
                                   </div>
                                 )}
-                                
                                 <div className="dividir-conta">
                                     <label className="text-white mr-2">Dividir conta?</label>
                                     <input 
@@ -905,13 +919,15 @@ useEffect(() => {
                                           })}
                                           onChange={(e) => {
                                             const novasFormas = [...formasPagamentosExtras];
-                                            const valor = parseFloat(e.target.value.replace(/\D/g, '')) / 100 || 0;
+                                            const valorBruto = e.target.value.replace(/\D/g, '');
+                                            const valor = Number((parseFloat(valorBruto) / 100).toFixed(2)); // 👈 corrige o ponto flutuante
                                             novasFormas[index] = {
                                               ...novasFormas[index],
                                               valor: valor,
                                             };
                                             setFormasPagamentosExtras(novasFormas);
                                           }}
+
                                           className="w-full px-3 py-2 rounded bg-gray-800 text-white border border-gray-600"
                                           placeholder="R$ 0,00"
                                         />
@@ -919,12 +935,37 @@ useEffect(() => {
                                     ))}
                                   </div>
                                 )}
-
                                 <div className="text-right">
                                   <p className="text-xl font-bold text-white">
                                     Total a pagar: R$ {calcularValorTotal().toFixed(2)}
                                   </p>
                                 </div>
+
+
+
+<p className="text-green-400 mt-2">
+  Total recebido: {calcularTotalPago().toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  })}
+</p>
+
+<p className="text-yellow-300 mt-2">
+  Valor restante: {calcularValorRestante().toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  })}
+</p>
+{calcularValorRestante() < 0 && (
+  <p className="text-cyan-400 mt-2">
+    Troco: {(calcularValorRestante() * -1).toLocaleString('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    })}
+  </p>
+)}
+
+
 
 
                                 <button

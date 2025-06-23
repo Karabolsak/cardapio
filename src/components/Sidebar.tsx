@@ -17,7 +17,7 @@ import barVerde from '../assets/bar-verde.svg';
 import clienteClara from '../assets/cliente-clara.svg'; //Cliente
 import clienteVerde from '../assets/cliente-verde.svg';
 
-type MenuItem = 'Dashboard' | 'Produtos' | 'Clientes' | 'Mesas' | 'Cozinha' | 'Comandas' | 'Bar';
+type MenuItem = 'Dashboard' | 'Clientes' | 'Produtos' | 'Mesas' | 'Cozinha' | 'Comandas' | 'Bar';
 
 interface MenuIcons {
   active: string;
@@ -34,14 +34,15 @@ export default function Sidebar({ onSelect }: { onSelect: (value: string) => voi
       active: dashboardVerde,
       inactive: dashboardClaro
     },
-    Produtos: {
-      active: menuVerde,
-      inactive: menuClaro
-    },
     Clientes: {
       active: clienteVerde,
       inactive: clienteClara
     },
+    Produtos: {
+      active: menuVerde,
+      inactive: menuClaro
+    },
+    
     Mesas: {
       active: mesasVerde,
       inactive: mesasClara

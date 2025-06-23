@@ -718,35 +718,34 @@ useEffect(() => {
           <p>Nenhuma mesa cadastrada.</p>
         ) : (
           <div className="conteudo-geral">
-            <div className="conteudo-mesas">
-                    <div className="catalogo-grid-mesas">
-                    {todasMesas.map((mesa) => (
-                      <div
-                        key={mesa.id}
-                        className={`mesa ${mesa.ativa ? 'mesa-ocupada' : 'mesa-livre'}`}
-                        onClick={() => setMesaSelecionada(mesa)}
+              <div className="conteudo-mesas">
+                <div className="catalogo-grid-mesas">
+                  {todasMesas.map((mesa) => (
+                    <div
+                      key={mesa.id}
+                      className={`mesa ${mesa.ativa ? 'mesa-ocupada' : 'mesa-livre'}`}
+                      onClick={() => setMesaSelecionada(mesa)}
                       >
-                        Mesa #{mesa.numero}
-                          <div className="status">
-                            {mesa.ativa ? "❌ Ocupada" : "✅ Livre"}
-                          </div>
-                          <p className="mt-2 text-sm">
-                            {mesa.ativa ? "Detalhes da mesa" : "Abrir mesa"}
-                          </p>
+                      Mesa #{mesa.numero}
+                      <div className="status">
+                        {mesa.ativa ? "❌ Ocupada" : "✅ Livre"}
                       </div>
-                    ))}
-                  </div> 
-                    
+                      <p className="mt-2 text-sm">
+                        {mesa.ativa ? "Detalhes" : "Abrir mesa"}
+                      </p>
+                    </div>
+                  ))}
+                </div> 
               </div>
               <div>
                     {mesaSelecionada && (
                         <div className="dinamico-comanda">
                           <div className="p-6 flex flex-col h-full">
-                            <div className="flex justify-between items-center mb-6">
+                            <div className="titulo-comanda">
                               <h2 className="text-2xl font-bold">
                               Mesa #{mesaSelecionada.numero} 
                               </h2>
-                              {mesaSelecionada.ativa ? nomeCliente  : ""}
+                              {mesaSelecionada.ativa ? <p>{nomeCliente}</p>   : ""}
                               <button
                                 onClick={() => setMesaSelecionada(null)}
                                 className="text-gray-400 hover:text-white text-xl"
@@ -1021,33 +1020,49 @@ useEffect(() => {
                           </div>
                         </div>
                       )}
-                  </div> 
+              </div> 
           </div>
-              
-            )}
-                    
+            )}    
     </div>
   )
- 
-
+  const renderComandas = () => {
+    return (
+      <h1 className="titulo-mesas">Comandas</h1>
+    )
+  }
+  const renderCozinha = () => {
+    return (
+      <h1 className="titulo-mesas">Cozinha</h1>
+    )
+  }
+  const renderBar = () => {
+    return (
+      <h1 className="titulo-mesas">Bar</h1>
+    )
+  }
+  const renderDash = () => {
+    return (
+      <h1 className="titulo-mesas">Dashboard</h1>
+    )
+  }
 
   
   const renderContent = () => {
     switch (selected) {
       case "Dashboard":
-        return <p>📊 Bem-vindo ao dashboard!</p>
-      case "Produtos":
-        return renderProdutos()
+        return  renderDash()
       case "Clientes":
           return renderClientes()
+      case "Produtos":
+        return renderProdutos()
       case "Mesas":
         return renderMesas()
       case "Cozinha":
-        return <p>Teste</p>     
+        return renderCozinha()     
       case "Comandas": 
-        return <p>Comandas</p>   
+        return renderComandas()   
       case "Bar": 
-      return <p>Bar</p>
+      return renderBar()
       default:
         return <p>Selecione uma opção.</p>
     }

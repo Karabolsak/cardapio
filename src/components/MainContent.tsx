@@ -65,7 +65,8 @@ type PagamentoExtra = {
   forma: FormaPagamento;
   valor: number;
 };
-  
+
+
   const [produtos, setProdutos] = useState<Produto[]>([])
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [mesaSelecionada, setMesaSelecionada] = useState<Mesa | null>(null);
@@ -405,9 +406,7 @@ type PagamentoExtra = {
 
 
 
-
-
-// TESTE PRODUTOS
+// ARRAY DE PAGAMENTOS FALTA LOGICA AINDA
 
 
 
@@ -816,14 +815,11 @@ useEffect(() => {
                                     <option value="cartao_credito">Cartão de Crédito</option>
                                   </select>
                                 </div>
-
-                                
-                                {formaPagamento === 'pix' && (
+                                {['pix', 'dinheiro', 'cartao_debito', 'cartao_credito'].includes(formaPagamento) && (
                                   <div className="text-left mt-4">
                                     <label className="block text-sm text-white mb-1">Insira o valor recebido:</label>
                                     <input
                                       type="text"
-                                      id="1"
                                       inputMode="numeric"
                                       value={formatarValorMonetario(valorTexto)}
                                       onChange={(e) => {
@@ -838,12 +834,7 @@ useEffect(() => {
                                     />
                                   </div>
                                 )}
-
                                 
-
-                                
-                              
-                              
                                 <div className="dividir-conta">
                                     <label className="text-white mr-2">Dividir conta?</label>
                                     <input 
@@ -926,7 +917,11 @@ useEffect(() => {
                                   </div>
                                 )}
 
-
+                                <div className="text-right">
+                                  <p className="text-xl font-bold text-white">
+                                    Total a pagar: R$ {calcularValorTotal().toFixed(2)}
+                                  </p>
+                                </div>
 
 
                                 <button

@@ -15,30 +15,31 @@
 }.tabela {
     background-color: rgba(0, 0, 0, 0.2);
 }.conteudo-mesas {
-  display: flex;
+  flex: 2;
 }.catalogo-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 24px;
-  padding: 0px 20px;
-  width: 80%;
+  gap: 16px;
+  width: 100%;
+}.catalogo-grid-mesas {
+  flex: 2;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 16px;
+  max-height: 100%;
 }.item-card {
-  background-color: #081E26;
-  color: #BACBD9;
-  border-radius: 12px;
-  border: 2px solid #BACBD9;
-  padding: 16px;
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  flex-direction: column;
-  transition: transform 0.2s ease;
+  background: #2d2d2d;
+  border: 1px solid #BACBD9;
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 10px;
+  transition: transform 0.2s;
+  cursor: pointer;
 }.item-card:hover {
-  transform: scale(1.05);
+  transform: translateY(-5px);
 }.item-img {
   width: 100%;
-  height: 160px;
-
+  height: 100px;
   object-fit: scale-down;
   border-radius: 8px;
   margin-bottom: 12px;
@@ -66,7 +67,12 @@
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 1.5rem;
   width: 80%;
-}.mesa {
+}.produtosMesa {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+.mesa {
   position: relative;
   padding: 20px;
   border-radius: 12px;
@@ -122,7 +128,6 @@
   background-color: #242424;
   border: 2px solid #A6754B;
   padding: 10px;
-  width: 20%;
   margin-right: 20px;
   border-radius: 20px;
 }.dinamico-comanda P {
@@ -130,14 +135,20 @@
 }.dinamico-comanda li {
   padding: 0px;
 }.conteudo-produtos {
-  display: flex;
+  flex: 2; 
+  overflow-y: auto; 
 }.dinamico-produto {
-  background-color: #242424;
-  border: 2px solid #A6754B;
-  padding: 10px;
-  width: 20vw;
-  margin-right: 20px;
-  border-radius: 20px;
+  flex: 1; /* Ocupa 1/3 do espaço disponível */
+  background: #1e1e1e; /* Cor de fundo */
+  border: 1px solid #A6754B;
+  padding: 20px;
+  margin-top: 10px;
+  border-radius: 8px;
+  position: sticky;
+  top: 20px;
+  max-height: 90vh;
+  overflow-y: auto;
+
 }.descritivo-produtos {
     display: flex;
     flex-direction: column;
@@ -201,4 +212,28 @@
   flex-direction: column;
   align-items: flex-start;
   margin-bottom: 10px;
+}.conteudo-geral {
+  display: flex;
+  gap: 20px; 
+  padding: 20px;
+  height: calc(100vh - altura-do-header); 
+}@media (max-width: 768px) {
+  .conteudo-geral {
+    flex-direction: column;
+  }
+  
+  .conteudo-produtos, .dinamico-produto {
+    flex: none;
+    width: 100%;
+  }
+  
+  .dinamico-produto {
+    position: static;
+    margin-top: 20px;
+  }
+  
+  .catalogo-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
 }
+

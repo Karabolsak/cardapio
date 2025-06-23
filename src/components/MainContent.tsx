@@ -407,7 +407,7 @@ type PagamentoExtra = {
 
 
 
-//formatação moeda supabase
+// TESTE PRODUTOS
 
 
 
@@ -539,19 +539,19 @@ useEffect(() => {
 
   const renderProdutos = () => (
   <div>
-    <h1>Produtos</h1>
+    <h1 className="titulo-mesas">Produtos</h1>
     {loadingProdutos ? (
       <p>Carregando produtos...</p>
     ) : (
-      <div className="conteudo-produtos">
+      <div className="conteudo-geral">
+        <div className="conteudo-produtos">
         <div className="catalogo-grid">
           {produtos.map((produto) => (
             <div key={produto.id} className="item-card" onClick={() => setItemSelecionado(produto)}>
               <img src={produto.imgProduto} className="item-img"  />
-              <h3>{produto.nome}</h3>
-              <h5>Tamanho do prato: {produto.tamanho}</h5>
-              <h4>Descrição</h4>
-              <p>{produto.descricao}</p>
+              <div className="infoProdutos">
+                <h3>{produto.nome}</h3><h5>{produto.tamanho}</h5>
+              </div>
               <div className="preco">
                 <p>R$ {produto.price?.toFixed(2)}</p>
                 <img src={shopping} alt="Adicionar ao carrinho" />
@@ -559,7 +559,9 @@ useEffect(() => {
             </div>
           ))}
         </div>
-        <div>
+        
+      </div>
+      <div>
           {itemSelecionado && (
             <div className="dinamico-produto">
               <p>Adicionar item na mesa</p>
@@ -580,37 +582,38 @@ useEffect(() => {
                 />
                 <div className="descritivo-produtos">
                   <p>
-                  Tamanho:{" "}
+                  {" "}
                   <span className="text-blue-400">{itemSelecionado.tamanho}</span>
                   </p>
-                  <p className="text-xl font-semibold mb-4">
-                    Preço: R$ {itemSelecionado.price?.toFixed(2)}
-                  </p>
-                  <label className="block text-sm mb-1 text-white">Selecionar mesa ativa:</label>
-                  <div className="mb-4">
-                    <select
-                      value={mesaParaAdicionar ? String(mesaParaAdicionar.id) : ""}
-                      onChange={(e) => {
-                        const idSelecionado = e.target.value;
-                        if (idSelecionado === "") {
-                          setMesaParaAdicionar(null);
-                          return;
-                        }
-                        const mesaSelecionada = mesasAtivas.find(
-                          (mesa) => String(mesa.id) === idSelecionado
-                        );
-                        console.log("ID selecionado:", idSelecionado);
-                        console.log("Mesa encontrada:", mesaSelecionada);
-                        setMesaParaAdicionar(mesaSelecionada || null);
-                      }}>
-                      <option value="">Selecione uma mesa</option>
-                      {mesasAtivas.map((mesa) => (
-                        <option key={mesa.id} value={String(mesa.id)}>
-                          Mesa #{mesa.numero}
-                        </option>
-                      ))}
-                    </select>
+                  <div className="produtosMesa">
+                    <label className="block text-sm mb-1 text-white">Selecionar mesa ativa:</label>
+                    <div className="mb-4">
+                      <select
+                        value={mesaParaAdicionar ? String(mesaParaAdicionar.id) : ""}
+                        onChange={(e) => {
+                          const idSelecionado = e.target.value;
+                          if (idSelecionado === "") {
+                            setMesaParaAdicionar(null);
+                            return;
+                          }
+                          const mesaSelecionada = mesasAtivas.find(
+                            (mesa) => String(mesa.id) === idSelecionado
+                          );
+                          console.log("ID selecionado:", idSelecionado);
+                          console.log("Mesa encontrada:", mesaSelecionada);
+                          setMesaParaAdicionar(mesaSelecionada || null);
+                        }}>
+                        <option value="">Selecione uma mesa</option>
+                        {mesasAtivas.map((mesa) => (
+                          <option key={mesa.id} value={String(mesa.id)}>
+                            Mesa #{mesa.numero}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
+                  
+                  
                     <div className="mb-4">
                       <label className="block text-sm mb-1 text-white">Quantidade:</label>
                       <div className="flex items-center space-x-3 bg-gray-800 px-4 py-2 rounded w-fit" >
@@ -714,308 +717,313 @@ useEffect(() => {
         ) : todasMesas.length === 0 ? (
           <p>Nenhuma mesa cadastrada.</p>
         ) : (
-              <div className="conteudo-mesas">
-                <div className="catalogo-grid">
-                  {todasMesas.map((mesa) => (
-                    <div
-                      key={mesa.id}
-                      className={`mesa ${mesa.ativa ? 'mesa-ocupada' : 'mesa-livre'}`}
-                      onClick={() => setMesaSelecionada(mesa)}
-                      style={{height: 110}}
-                    >
-                      Mesa #{mesa.numero}
-                        <div className="status">
-                          {mesa.ativa ? "❌ Ocupada" : "✅ Livre"}
-                        </div>
-                        <p className="mt-2 text-sm">
-                          {mesa.ativa ? "Detalhes da mesa" : "Abrir mesa"}
-                        </p>
-                    </div>
-                  ))}
-                </div> 
-                {mesaSelecionada && (
-                  <div className="dinamico-comanda">
-                    <div className="p-6 flex flex-col h-full">
-                      <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-2xl font-bold">
-                        Mesa #{mesaSelecionada.numero} 
-                        </h2>
-                        {mesaSelecionada.ativa ? nomeCliente  : ""}
-                        <button
-                          onClick={() => setMesaSelecionada(null)}
-                          className="text-gray-400 hover:text-white text-xl"
-                          >
-                          ✕
-                        </button>
+          <div className="conteudo-geral">
+            <div className="conteudo-mesas">
+                    <div className="catalogo-grid-mesas">
+                    {todasMesas.map((mesa) => (
+                      <div
+                        key={mesa.id}
+                        className={`mesa ${mesa.ativa ? 'mesa-ocupada' : 'mesa-livre'}`}
+                        onClick={() => setMesaSelecionada(mesa)}
+                      >
+                        Mesa #{mesa.numero}
+                          <div className="status">
+                            {mesa.ativa ? "❌ Ocupada" : "✅ Livre"}
+                          </div>
+                          <p className="mt-2 text-sm">
+                            {mesa.ativa ? "Detalhes da mesa" : "Abrir mesa"}
+                          </p>
                       </div>
-                      <p className="mb-4">
-                        <span className={mesaSelecionada.ativa ? "text-red-400" : "text-green-400"}>
-                          {mesaSelecionada.ativa ? "" : "Mesa disponível"}
-                        </span>
-                      </p>
-                      {mesaSelecionada.ativa ? (
-                        <div>
-                          <p>Comanda: {idComandaSelecionada?.toString().slice(0, 5)}</p>
-                          <p className="font-semibold mb-2">Itens da comanda:</p>
-                          {itensComanda.length === 0 ? (
-                            <p className="text-sm text-gray-400 mb-4">Nenhum item adicionado ainda.</p>
-                          ) : (
-                            <ul className="mb-4 space-y-2">
-                              {itensComanda.map((item) => (
-                                <li key={item.id} className="item-comanda bg-gray-700 p-3 rounded">
-                                  <div className="flex justify-between">
-                                    <span>{item.nome_produto}</span>
-                                    <span>
-                                      {item.quantidade} x R${item.preco_unitario.toFixed(2)}
-                                    </span>
-                                  </div>
-                                </li>
-                                
-                              ))}
-                            </ul>
-                          )}
-                          <div className="flex items-center justify-between">
-                            <label className="flex items-center space-x-2">
-                              <input
-                                type="checkbox"
-                                checked={taxaServico}
-                                onChange={() => setTaxaServico(!taxaServico)}
-                                className="h-4 w-4 text-blue-600 rounded"
-                              />
-                              <span>Taxa de serviço ({(taxaPercentual * 100).toFixed(0)}%)</span>
-                            </label>
-                          </div>
-                          <div className="text-right">
-                            <span>Taxa: {formatarValorTaxa(calcularValorTaxa())}</span>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-xl font-bold text-white">
-                              Total: R$ {calcularValorTotal().toFixed(2)}
-                            </p>
-                          </div>
-                          <div className="mb-4">
-                            <label className="block text-sm font-medium text-white mb-1">
-                              Forma de Pagamento
-                            </label>
-                            <select 
-                              value={formaPagamento}
-                              onChange={(e) => {
-                                setFormaPagamento(e.target.value as FormaPagamento)
-                              }}
-                              className="w-full p-2 rounded bg-gray-700 text-white border border-gray-600"
-                              >
-                              <option value="">Opções</option>
-                              <option value="dinheiro">Dinheiro</option>
-                              <option value="pix">Pix</option>
-                              <option value="cartao_debito">Cartão de Débito</option>
-                              <option value="cartao_credito">Cartão de Crédito</option>
-                            </select>
-                          </div>
-
-                          
-                          {formaPagamento === 'pix' && (
-                            <div className="text-left mt-4">
-                              <label className="block text-sm text-white mb-1">Insira o valor recebido:</label>
-                              <input
-                                type="text"
-                                id="1"
-                                inputMode="numeric"
-                                value={formatarValorMonetario(valorTexto)}
-                                onChange={(e) => {
-                                  const novoValor = e.target.value;
-                                  const apenasNumeros = novoValor.replace(/\D/g, '');
-
-                                  setValorTexto(apenasNumeros); 
-                                  setValorPago(Number(apenasNumeros) / 100); 
-                                }}
-                                className="w-full px-3 py-2 rounded bg-gray-800 text-white border border-gray-600"
-                                placeholder="Digite o valor"
-                              />
-                            </div>
-                          )}
-
-                          
-
-                          
-                        
-                        
-                          <div className="dividir-conta">
-                              <label className="text-white mr-2">Dividir conta?</label>
-                              <input 
-                                type="checkbox" 
-                                checked={dividirConta}
-                                onChange={() => setDividirConta(!dividirConta)}
-                                className="h-4 w-4 text-blue-600 rounded"
-                              />
-
-                              {dividirConta && (
-                                <div className="botton-dividir">
-                                  <button
-                                    onClick={() => setQuantidade((prev) => Math.max(1, prev - 1))}
-                                    className="text-white text-lg px-2 hover:text-red-400"
-                                    style={{ marginRight: 15 }}
-                                  >
-                                    −
-                                  </button>
-                                  <span 
-                                    className="text-white font-semibold"
-                                    style={{ marginRight: 15 }}>
-                                      {quantidade}
-                                  </span>
-                                  <button
-                                    onClick={() => setQuantidade((prev) => prev + 1)}
-                                    className="text-white text-lg px-2 hover:text-green-400"
-                                  >
-                                    +
-                                  </button>
-                                </div>
-                              )}
-                          </div>
-                          {dividirConta && quantidade > 1 && (
-                            <div className="mt-4 space-y-4">
-                              {formasPagamentosExtras.map((pagamento, index) => (
-                                <div key={index} className="pagamentos-extras">
-                                  <label className="block text-white mb-2">
-                                    Pagamento adicional {index + 2}
-                                  </label>
-
-                                  <select
-                                    value={pagamento.forma}
-                                    onChange={(e) => {
-                                      const novasFormas = [...formasPagamentosExtras];
-                                      novasFormas[index] = {
-                                        ...novasFormas[index],
-                                        forma: e.target.value as FormaPagamento,
-                                      };
-                                      setFormasPagamentosExtras(novasFormas);
-                                    }}
-                                    className="w-full mb-2 px-3 py-2 rounded bg-gray-800 text-white border border-gray-600"
-                                  >
-                                    {Object.entries(formasPagamentoLabels).map(([value, label]) => (
-                                      <option key={value} value={value}>
-                                        {label}
-                                      </option>
-                                    ))}
-                                  </select>
-                                  <label>Insira o valor recebido: </label>
-                                  <input
-                                    type="text"
-                                    value={pagamento.valor.toLocaleString('pt-BR', {
-                                      style: 'currency',
-                                      currency: 'BRL'
-                                    })}
-                                    onChange={(e) => {
-                                      const novasFormas = [...formasPagamentosExtras];
-                                      const valor = parseFloat(e.target.value.replace(/\D/g, '')) / 100 || 0;
-                                      novasFormas[index] = {
-                                        ...novasFormas[index],
-                                        valor: valor,
-                                      };
-                                      setFormasPagamentosExtras(novasFormas);
-                                    }}
-                                    className="w-full px-3 py-2 rounded bg-gray-800 text-white border border-gray-600"
-                                    placeholder="R$ 0,00"
-                                  />
-                                </div>
-                              ))}
-                            </div>
-                          )}
-
-
-
-
-                          <button
-                            type="button"
-                            className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded w-full"
-                            onClick={() => encerrarComanda(mesaSelecionada)}
-                          >
-                            Encerrar Comanda
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="formulario-Cliente">
-                          <input
-                            type="text"
-                            value={nomeCliente}
-                            required
-                            onChange={(e) => {
-                              const texto = e.target.value;
-                              const textoFormatado = texto.charAt(0).toUpperCase() + texto.slice(1);
-                              setNomeCliente(textoFormatado);
-                            }}
-                            className="input-estilizado"
-                            placeholder="Digite o nome do cliente"
-                          />
-                          <input
-                            type="text"
-                            value={cpfCliente}
-                            required
-                            onChange={(e) => setCpfCliente(formatarCPF(e.target.value))}
-                            className="input-estilizado"
-                            maxLength={14}
-                            placeholder="Digite o CPF do cliente"
-                          />
-
-                          <button 
-                            type="button"
-                            onClick={() => verificarOuCadastrarCliente()}
-                            className={`px-4 py-2 rounded w-full mb-2 transition ${
-                              !nomeCliente.trim()
-                                ? "bg-gray-500 cursor-not-allowed"
-                                : "bg-green-500 hover:bg-green-600"
-                            } text-white`}
-                          >
-                            Abrir Mesa
-                          </button>
-                          {cadastroClienteAtivo && (
-                            <div className="terminar-cliente">
-                              <label>Nome do cliente:</label>
-                              <input
-                                type="text"
-                                value={nomeCliente}
-                                onChange={(e) => setNomeCliente(e.target.value)}
-                                required
-                                className="input-estilizado"
-                              />
-                              <label>Telefone:</label>
-                              <input
-                                type="text"
-                                value={telefoneCliente}
-                                onChange={(e) => setTelefoneCliente(formatarCelular(e.target.value))}
-                                required
-                                className="input-estilizado"
-                                placeholder="(xx) xxxxx-xxxx"
-                              />
-                              <label>Data de nascimento:</label>
-                              <input
-                                type="date"
-                                value={nascimentoCliente}
-                                onChange={(e) => setNascimentoCliente(e.target.value)}
-                                className="input-estilizado"
-                              />
-                              <label>E-mail:</label>
-                              <input
-                                type="email"
-                                value={emailCliente}
-                                onChange={(e) => setEmailCliente(e.target.value)}
-                                className="input-estilizado"
-                                placeholder="exemplo@mail.com"
-                              />
+                    ))}
+                  </div> 
+                    
+              </div>
+              <div>
+                    {mesaSelecionada && (
+                        <div className="dinamico-comanda">
+                          <div className="p-6 flex flex-col h-full">
+                            <div className="flex justify-between items-center mb-6">
+                              <h2 className="text-2xl font-bold">
+                              Mesa #{mesaSelecionada.numero} 
+                              </h2>
+                              {mesaSelecionada.ativa ? nomeCliente  : ""}
                               <button
-                                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded w-full mt-2"
-                                disabled={!nomeCliente.trim()}
-                                onClick={handleCadastrarCliente}
-                              >
-                                Cadastrar Cliente e Abrir Mesa
+                                onClick={() => setMesaSelecionada(null)}
+                                className="text-gray-400 hover:text-white text-xl"
+                                >
+                                ✕
                               </button>
                             </div>
-                          )}
+                            <p className="mb-4">
+                              <span className={mesaSelecionada.ativa ? "text-red-400" : "text-green-400"}>
+                                {mesaSelecionada.ativa ? "" : "Mesa disponível"}
+                              </span>
+                            </p>
+                            {mesaSelecionada.ativa ? (
+                              <div>
+                                <p>Comanda: {idComandaSelecionada?.toString().slice(0, 5)}</p>
+                                <p className="font-semibold mb-2">Itens da comanda:</p>
+                                {itensComanda.length === 0 ? (
+                                  <p className="text-sm text-gray-400 mb-4">Nenhum item adicionado ainda.</p>
+                                ) : (
+                                  <ul className="mb-4 space-y-2">
+                                    {itensComanda.map((item) => (
+                                      <li key={item.id} className="item-comanda bg-gray-700 p-3 rounded">
+                                        <div className="flex justify-between">
+                                          <span>{item.nome_produto}</span>
+                                          <span>
+                                            {item.quantidade} x R${item.preco_unitario.toFixed(2)}
+                                          </span>
+                                        </div>
+                                      </li>
+                                      
+                                    ))}
+                                  </ul>
+                                )}
+                                <div className="flex items-center justify-between">
+                                  <label className="flex items-center space-x-2">
+                                    <input
+                                      type="checkbox"
+                                      checked={taxaServico}
+                                      onChange={() => setTaxaServico(!taxaServico)}
+                                      className="h-4 w-4 text-blue-600 rounded"
+                                    />
+                                    <span>Taxa de serviço ({(taxaPercentual * 100).toFixed(0)}%)</span>
+                                  </label>
+                                </div>
+                                <div className="text-right">
+                                  <span>Taxa: {formatarValorTaxa(calcularValorTaxa())}</span>
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-xl font-bold text-white">
+                                    Total: R$ {calcularValorTotal().toFixed(2)}
+                                  </p>
+                                </div>
+                                <div className="mb-4">
+                                  <label className="block text-sm font-medium text-white mb-1">
+                                    Forma de Pagamento
+                                  </label>
+                                  <select 
+                                    value={formaPagamento}
+                                    onChange={(e) => {
+                                      setFormaPagamento(e.target.value as FormaPagamento)
+                                    }}
+                                    className="w-full p-2 rounded bg-gray-700 text-white border border-gray-600"
+                                    >
+                                    <option value="">Opções</option>
+                                    <option value="dinheiro">Dinheiro</option>
+                                    <option value="pix">Pix</option>
+                                    <option value="cartao_debito">Cartão de Débito</option>
+                                    <option value="cartao_credito">Cartão de Crédito</option>
+                                  </select>
+                                </div>
+
+                                
+                                {formaPagamento === 'pix' && (
+                                  <div className="text-left mt-4">
+                                    <label className="block text-sm text-white mb-1">Insira o valor recebido:</label>
+                                    <input
+                                      type="text"
+                                      id="1"
+                                      inputMode="numeric"
+                                      value={formatarValorMonetario(valorTexto)}
+                                      onChange={(e) => {
+                                        const novoValor = e.target.value;
+                                        const apenasNumeros = novoValor.replace(/\D/g, '');
+
+                                        setValorTexto(apenasNumeros); 
+                                        setValorPago(Number(apenasNumeros) / 100); 
+                                      }}
+                                      className="w-full px-3 py-2 rounded bg-gray-800 text-white border border-gray-600"
+                                      placeholder="Digite o valor"
+                                    />
+                                  </div>
+                                )}
+
+                                
+
+                                
+                              
+                              
+                                <div className="dividir-conta">
+                                    <label className="text-white mr-2">Dividir conta?</label>
+                                    <input 
+                                      type="checkbox" 
+                                      checked={dividirConta}
+                                      onChange={() => setDividirConta(!dividirConta)}
+                                      className="h-4 w-4 text-blue-600 rounded"
+                                    />
+
+                                    {dividirConta && (
+                                      <div className="botton-dividir">
+                                        <button
+                                          onClick={() => setQuantidade((prev) => Math.max(1, prev - 1))}
+                                          className="text-white text-lg px-2 hover:text-red-400"
+                                          style={{ marginRight: 15 }}
+                                        >
+                                          −
+                                        </button>
+                                        <span 
+                                          className="text-white font-semibold"
+                                          style={{ marginRight: 15 }}>
+                                            {quantidade}
+                                        </span>
+                                        <button
+                                          onClick={() => setQuantidade((prev) => prev + 1)}
+                                          className="text-white text-lg px-2 hover:text-green-400"
+                                        >
+                                          +
+                                        </button>
+                                      </div>
+                                    )}
+                                </div>
+                                {dividirConta && quantidade > 1 && (
+                                  <div className="mt-4 space-y-4">
+                                    {formasPagamentosExtras.map((pagamento, index) => (
+                                      <div key={index} className="pagamentos-extras">
+                                        <label className="block text-white mb-2">
+                                          Pagamento adicional {index + 2}
+                                        </label>
+
+                                        <select
+                                          value={pagamento.forma}
+                                          onChange={(e) => {
+                                            const novasFormas = [...formasPagamentosExtras];
+                                            novasFormas[index] = {
+                                              ...novasFormas[index],
+                                              forma: e.target.value as FormaPagamento,
+                                            };
+                                            setFormasPagamentosExtras(novasFormas);
+                                          }}
+                                          className="w-full mb-2 px-3 py-2 rounded bg-gray-800 text-white border border-gray-600"
+                                        >
+                                          {Object.entries(formasPagamentoLabels).map(([value, label]) => (
+                                            <option key={value} value={value}>
+                                              {label}
+                                            </option>
+                                          ))}
+                                        </select>
+                                        <label>Insira o valor recebido: </label>
+                                        <input
+                                          type="text"
+                                          value={pagamento.valor.toLocaleString('pt-BR', {
+                                            style: 'currency',
+                                            currency: 'BRL'
+                                          })}
+                                          onChange={(e) => {
+                                            const novasFormas = [...formasPagamentosExtras];
+                                            const valor = parseFloat(e.target.value.replace(/\D/g, '')) / 100 || 0;
+                                            novasFormas[index] = {
+                                              ...novasFormas[index],
+                                              valor: valor,
+                                            };
+                                            setFormasPagamentosExtras(novasFormas);
+                                          }}
+                                          className="w-full px-3 py-2 rounded bg-gray-800 text-white border border-gray-600"
+                                          placeholder="R$ 0,00"
+                                        />
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+
+
+
+
+                                <button
+                                  type="button"
+                                  className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded w-full"
+                                  onClick={() => encerrarComanda(mesaSelecionada)}
+                                >
+                                  Encerrar Comanda
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="formulario-Cliente">
+                                <input
+                                  type="text"
+                                  value={nomeCliente}
+                                  required
+                                  onChange={(e) => {
+                                    const texto = e.target.value;
+                                    const textoFormatado = texto.charAt(0).toUpperCase() + texto.slice(1);
+                                    setNomeCliente(textoFormatado);
+                                  }}
+                                  className="input-estilizado"
+                                  placeholder="Digite o nome do cliente"
+                                />
+                                <input
+                                  type="text"
+                                  value={cpfCliente}
+                                  required
+                                  onChange={(e) => setCpfCliente(formatarCPF(e.target.value))}
+                                  className="input-estilizado"
+                                  maxLength={14}
+                                  placeholder="Digite o CPF do cliente"
+                                />
+
+                                <button 
+                                  type="button"
+                                  onClick={() => verificarOuCadastrarCliente()}
+                                  className={`px-4 py-2 rounded w-full mb-2 transition ${
+                                    !nomeCliente.trim()
+                                      ? "bg-gray-500 cursor-not-allowed"
+                                      : "bg-green-500 hover:bg-green-600"
+                                  } text-white`}
+                                >
+                                  Abrir Mesa
+                                </button>
+                                {cadastroClienteAtivo && (
+                                  <div className="terminar-cliente">
+                                    <label>Nome do cliente:</label>
+                                    <input
+                                      type="text"
+                                      value={nomeCliente}
+                                      onChange={(e) => setNomeCliente(e.target.value)}
+                                      required
+                                      className="input-estilizado"
+                                    />
+                                    <label>Telefone:</label>
+                                    <input
+                                      type="text"
+                                      value={telefoneCliente}
+                                      onChange={(e) => setTelefoneCliente(formatarCelular(e.target.value))}
+                                      required
+                                      className="input-estilizado"
+                                      placeholder="(xx) xxxxx-xxxx"
+                                    />
+                                    <label>Data de nascimento:</label>
+                                    <input
+                                      type="date"
+                                      value={nascimentoCliente}
+                                      onChange={(e) => setNascimentoCliente(e.target.value)}
+                                      className="input-estilizado"
+                                    />
+                                    <label>E-mail:</label>
+                                    <input
+                                      type="email"
+                                      value={emailCliente}
+                                      onChange={(e) => setEmailCliente(e.target.value)}
+                                      className="input-estilizado"
+                                      placeholder="exemplo@mail.com"
+                                    />
+                                    <button
+                                      className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded w-full mt-2"
+                                      disabled={!nomeCliente.trim()}
+                                      onClick={handleCadastrarCliente}
+                                    >
+                                      Cadastrar Cliente e Abrir Mesa
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       )}
-                    </div>
-                  </div>
-                )}
-              </div>
+                  </div> 
+          </div>
+              
             )}
                     
     </div>
@@ -1038,6 +1046,8 @@ useEffect(() => {
         return <p>Teste</p>     
       case "Comandas": 
         return <p>Comandas</p>   
+      case "Bar": 
+      return <p>Bar</p>
       default:
         return <p>Selecione uma opção.</p>
     }

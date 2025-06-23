@@ -49,11 +49,20 @@ ul {
   position: absolute;
   left: 0;
   width: 4px;
+  margin-top: 20px;
   background-color: #22c55e;
   border-radius: 9999px;
   transition: top 0.3s ease;
 }
 .menu-container {
-  position: relative;
+      position: relative;
+    display: flex
+;
+    align-items: center;
+    flex-direction: column;
 }
-
+.infoProdutos {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+}

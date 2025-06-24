@@ -97,20 +97,22 @@ type PagamentoExtra = {
   const [formasPagamentosExtras, setFormasPagamentosExtras] = useState<PagamentoExtra[]>([]);
   const [valorPago, setValorPago] = useState<number>(0);
   const [observacoesPedidos, setObservacoesPedidos] = useState<string>('');
+  
 
 
   
-  const abrirMesa = async (mesa: Mesa) => {
-    const { error: errorMesa } = await supabase
+ const abrirMesa = async (mesa: Mesa) => {
+  const { error: errorMesa } = await supabase
     .from("mesas")
     .update({ ativa: true })
-    .eq("id", mesa.id)
+    .eq("id", mesa.id);
 
-    if (errorMesa) {
-      console.error("Erro ao ativar mesa:", errorMesa);
-    }
+  if (errorMesa) {
+    console.error("Erro ao ativar mesa:", errorMesa);
+    return;
+  }
 
-    const { data: novaComanda, error: errorComanda } = await supabase
+  const { data: novaComanda, error: errorComanda } = await supabase
     .from("comandas")
     .insert([
       {
@@ -125,21 +127,24 @@ type PagamentoExtra = {
       },
     ])
     .select()
+    .single(); // 👈 retorna objeto direto, não array
 
-    if (errorComanda) {
-      console.error("Erro ao criar comanda:", errorComanda);
-      return;
-    }
+  if (errorComanda) {
+    console.error("Erro ao criar comanda:", errorComanda);
+    return;
+  }
 
-    const atualizadas = todasMesas.map((m) => 
-      m.id === mesa.id ? { ...m, ativa: true } : m 
-    );
-    setTodasMesas(atualizadas);
-    setMesaSelecionada({ ...mesa, ativa: true });
-    
-    console.log("Comanda criada com sucesso:", novaComanda);
-    
-  };
+  setIdComandaSelecionada(novaComanda.id); // 👈 aqui está a correção fundamental
+
+  const atualizadas = todasMesas.map((m) =>
+    m.id === mesa.id ? { ...m, ativa: true } : m
+  );
+  setTodasMesas(atualizadas);
+  setMesaSelecionada({ ...mesa, ativa: true });
+
+  console.log("Comanda criada com sucesso:", novaComanda);
+};
+
   const encerrarComanda = async (mesa: Mesa) => {
   const { data: comandasAbertas, error: fetchError } = await supabase
     .from("comandas")
@@ -297,7 +302,6 @@ type PagamentoExtra = {
 
   return Number(taxa.toFixed(2)); // 👈 garante duas casas decimais sem “zebras”
 };
-
   const formatarValorTaxa = (valor: number): string => {
     return Number(valor.toFixed(2)).toLocaleString('pt-BR', {
       style: 'currency',
@@ -410,21 +414,19 @@ type PagamentoExtra = {
     cartao_debito: 'Cartão de Débito',
     pix: 'PIX'
 };
-
-const calcularTotalPago = (): number => {
-  const extras = formasPagamentosExtras.reduce((acc, item) => acc + item.valor, 0);
-  return valorPago + extras;
+  const calcularTotalPago = (): number => {
+    const extras = formasPagamentosExtras.reduce((acc, item) => acc + item.valor, 0);
+    return valorPago + extras;
+};
+  const calcularValorRestante = (): number => {
+    return calcularValorTotal() - calcularTotalPago();
 };
 
-const calcularValorRestante = (): number => {
-  return calcularValorTotal() - calcularTotalPago();
-};
 
 
 
 
-
-// FUNCIONOU
+// Corrigido, agora verificar teste pagamentos e estilos
 
 
 

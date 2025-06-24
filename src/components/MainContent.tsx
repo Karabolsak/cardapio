@@ -102,6 +102,39 @@ type PagamentoExtra = {
 
   
  const abrirMesa = async (mesa: Mesa) => {
+  const { data: comandaExistente } = await supabase
+    .from('comandas')
+    .select('id')
+    .eq('id_mesa', mesa.id)
+    .eq('status', true)
+    .maybeSingle();
+
+  if (comandaExistente) {
+    setIdComandaSelecionada(comandaExistente.id);
+  } else {
+    const { data: novaComanda, error } = await supabase
+      .from('comandas')
+      .insert([{
+        id_mesa: mesa.id,
+        id_loja: mesa.id_loja,
+        nome_cliente: nomeCliente,
+        aberta_em: new Date().toISOString(),
+        status: true,
+        taxa_status: false,
+        cpf_cliente: cpfLimpo,
+        mais_pagantes: false,
+      }])
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Erro ao criar comanda:", error);
+      return;
+    }
+
+    setIdComandaSelecionada(novaComanda.id);
+  }
+
   const { error: errorMesa } = await supabase
     .from("mesas")
     .update({ ativa: true })
@@ -112,39 +145,12 @@ type PagamentoExtra = {
     return;
   }
 
-  const { data: novaComanda, error: errorComanda } = await supabase
-    .from("comandas")
-    .insert([
-      {
-        id_mesa: mesa.id,
-        id_loja: mesa.id_loja,
-        nome_cliente: nomeCliente,
-        aberta_em: new Date().toISOString(),
-        status: true,
-        taxa_status: false,
-        cpf_cliente: cpfLimpo,
-        mais_pagantes: false,
-      },
-    ])
-    .select()
-    .single(); // 👈 retorna objeto direto, não array
-
-  if (errorComanda) {
-    console.error("Erro ao criar comanda:", errorComanda);
-    return;
-  }
-
-  setIdComandaSelecionada(novaComanda.id); // 👈 aqui está a correção fundamental
-
   const atualizadas = todasMesas.map((m) =>
     m.id === mesa.id ? { ...m, ativa: true } : m
   );
   setTodasMesas(atualizadas);
   setMesaSelecionada({ ...mesa, ativa: true });
-
-  console.log("Comanda criada com sucesso:", novaComanda);
 };
-
   const encerrarComanda = async (mesa: Mesa) => {
   const { data: comandasAbertas, error: fetchError } = await supabase
     .from("comandas")
@@ -160,7 +166,7 @@ type PagamentoExtra = {
   const comanda = comandasAbertas[0];
 
   const subtotal = itensComanda.reduce((total, item) => total + (item.quantidade * item.preco_unitario), 0);
-  const valorTaxa = taxaServico ? subtotal * 0.1 : 0;
+  const valorTaxa = taxaServico ? Number((subtotal * 0.1).toFixed(2)) : 0;
   const dividirConta = setDividirConta;
 
   const { error: updateComandaError } = await supabase
@@ -213,62 +219,16 @@ type PagamentoExtra = {
 
   console.log("Comanda e itens encerrados com sucesso!");
 };
-//  const carregarItensDaComanda = async (mesa: Mesa) => {
-//  const { data: comandasAbertas, error: fetchError } = await supabase
-//    .from("comandas")
-//    .select("*")
-//    .eq("id_mesa", mesa.id)
-//    .eq("status", true);
-
-//  if (fetchError || !comandasAbertas || comandasAbertas.length === 0) {
-//    console.error("Nenhuma comanda aberta encontrada:", fetchError);
-//    setItensComanda([]);
-//    return;
-//  }
-
-//  const comanda = comandasAbertas[0];
-//  setIdComandaSelecionada(comanda.id);
-
-//  const { data: itens, error: itensError } = await supabase
-//  .from("itens_comanda")
-//  .select("id, id_produto, nome_produto, quantidade, preco_unitario, adicionado_em, id_colaborador, status")
-//  .eq("id_comanda", comanda.id);
-
-
-//  if (itensError) {
-//    console.error("Erro ao buscar itens da comanda:", itensError);
-//    return;
-//  }
-
-//  setItensComanda(itens || [0]);
-//};
   const adicionarItemNaComanda = async () => {
-  if (!itemSelecionado || !mesaParaAdicionar) {
-    alert("Selecione um produto e uma mesa para adicionar o item.");
-    return;
-  }
-  const { data: comandaVinculada, error: errorComanda } = await supabase
-    .from('comandas')
-    .select('id')
-    .eq('id_mesa', mesaParaAdicionar.id)
-    .limit(1)
-    .maybeSingle();
-
-  if (errorComanda) {
-    console.error('Erro ao buscar comanda:', errorComanda);
-    alert('Erro ao buscar comanda vinculada à mesa.');
-    return;
-  }
-
-  if (!comandaVinculada) {
-    alert('Nenhuma comanda vinculada a essa mesa.');
+  if (!itemSelecionado || !idComandaSelecionada) {
+    alert("Selecione um produto e certifique-se que a mesa tem uma comanda ativa.");
     return;
   }
 
   const { error } = await supabase
     .from('itens_comanda')
     .insert([{
-      id_comanda: comandaVinculada.id,
+      id_comanda: idComandaSelecionada, // Usa diretamente o ID da comanda selecionada
       id_produto: itemSelecionado.id,
       quantidade,
       preco_unitario: itemSelecionado.price,
@@ -282,6 +242,13 @@ type PagamentoExtra = {
     console.error('Erro ao adicionar item:', error);
     alert('Erro ao adicionar item, tente novamente');
   } else {
+    // Recarrega os itens da comanda
+    const { data: itens } = await supabase
+      .from('itens_comanda')
+      .select('*')
+      .eq('id_comanda', idComandaSelecionada);
+
+    setItensComanda(itens || []);
     setMensagemSucesso("Item adicionado com sucesso!");
     setItemSelecionado(null);
     setQuantidade(1);
@@ -426,7 +393,7 @@ type PagamentoExtra = {
 
 
 
-// Corrigido, agora verificar teste pagamentos e estilos
+// Bug Resolvido
 
 
 
@@ -502,7 +469,7 @@ useEffect(() => {
   }
 
   const carregarDadosMesa = async () => {
-    // 1. Busca a comanda (com nome_cliente garantido)
+    // Busca a comanda ativa para a mesa
     const { data: comanda } = await supabase
       .from('comandas')
       .select('id, nome_cliente')
@@ -510,17 +477,18 @@ useEffect(() => {
       .eq('status', true)
       .single();
 
-    // 2. Atualiza nome do cliente (sem verificação pois sabemos que existe)
-    setNomeCliente(comanda?.nome_cliente);
-    setIdComandaSelecionada(comanda?.id);
+    if (comanda) {
+      setNomeCliente(comanda.nome_cliente || "");
+      setIdComandaSelecionada(comanda.id);
 
-    // 3. Busca os itens
-    const { data: itens } = await supabase
-      .from('itens_comanda')
-      .select('*')
-      .eq('id_comanda', comanda?.id);
+      // Busca os itens da comanda
+      const { data: itens } = await supabase
+        .from('itens_comanda')
+        .select('*')
+        .eq('id_comanda', comanda.id);
 
-    setItensComanda(itens || []);
+      setItensComanda(itens || []);
+    }
   };
 
   carregarDadosMesa();
@@ -541,7 +509,6 @@ useEffect(() => {
   };
   fetchMesasAtivas();
 }, []);
-
 useEffect(() => {
   if (dividirConta && quantidade > 1) {
     setFormasPagamentosExtras(
@@ -670,17 +637,15 @@ useEffect(() => {
                 </div>
                 <button
                   className={`bg-green-500 hover:bg-green-600 px-4 py-2 rounded w-full ${
-                    !mesaParaAdicionar ? "opacity-50 cursor-not-allowed" : ""
+                    !mesaParaAdicionar || !idComandaSelecionada ? "opacity-50 cursor-not-allowed" : ""
                   }`}
                   onClick={async () => {
-                    if (!mesaParaAdicionar) return;
-
+                    if (!mesaParaAdicionar || !idComandaSelecionada) return;
                     await adicionarItemNaComanda();
-
                     setMensagemSucesso("Item adicionado com sucesso!");
                     setTimeout(() => setMensagemSucesso(null), 3000);
                   }}
-                  disabled={!mesaParaAdicionar}
+                  disabled={!mesaParaAdicionar || !idComandaSelecionada}
                 >
                   Adicionar ao pedido
                 </button>
@@ -742,7 +707,9 @@ useEffect(() => {
                   {todasMesas.map((mesa) => (
                     <div
                       key={mesa.id}
-                      className={`mesa ${mesa.ativa ? 'mesa-ocupada' : 'mesa-livre'}`}
+                      className={`mesa ${mesa.ativa ? 'mesa-ocupada' : 'mesa-livre'} ${
+                        mesaSelecionada?.id === mesa.id ? 'border-2 border-yellow-400' : ''
+                      }`}
                       onClick={() => setMesaSelecionada(mesa)}
                       >
                       Mesa #{mesa.numero}

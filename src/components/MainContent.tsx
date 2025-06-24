@@ -43,23 +43,6 @@ type ItemComanda = {
   id_colaborador: number;
   status: boolean;
 };
-
-// type Comanda = {
-//  id: number;
-//  id_mesa: number;
-//  aberta_em: string;
-//  fechada_em: string;
-//  observacoes: string;
-//  id_colaborador: number;
-//  id_loja: number;
-//  status: boolean;
-//  nome_cliente: string;
-//  cpf_cliente: number;
-//  taxa_status: boolean;
-//  taxa_servico?: number;
-//  forma_pagamento: string;
-//  valor_comanda: number;
-// };
 type FormaPagamento = 'dinheiro' | 'pix' | 'cartao_credito' | 'cartao_debito';
 type PagamentoExtra = {
   forma: FormaPagamento;
@@ -177,7 +160,7 @@ type PagamentoExtra = {
       taxa_status: taxaServico,
       taxa_servico: valorTaxa,
       forma_pagamento: formaPagamento || "não informado",
-      valor_comanda: valorPago,
+      valor_comanda: calcularTotalPago(),
       mais_pagantes: dividirConta,
     })
     .eq("id", comanda.id);
@@ -393,7 +376,7 @@ type PagamentoExtra = {
 
 
 
-// Bug Resolvido
+// Tentar resolver pagamento logica 2
 
 
 
@@ -829,7 +812,6 @@ useEffect(() => {
                                       onChange={() => setDividirConta(!dividirConta)}
                                       className="h-4 w-4 text-blue-600 rounded"
                                     />
-
                                     {dividirConta && (
                                       <div className="botton-dividir">
                                         <button
@@ -909,30 +891,26 @@ useEffect(() => {
                                     Total a pagar: R$ {calcularValorTotal().toFixed(2)}
                                   </p>
                                 </div>
-
-
-
-<p className="text-green-400 mt-2">
-  Total recebido: {calcularTotalPago().toLocaleString('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  })}
-</p>
-
-<p className="text-yellow-300 mt-2">
-  Valor restante: {calcularValorRestante().toLocaleString('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  })}
-</p>
-{calcularValorRestante() < 0 && (
-  <p className="text-cyan-400 mt-2">
-    Troco: {(calcularValorRestante() * -1).toLocaleString('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    })}
-  </p>
-)}
+                                <p className="text-green-400 mt-2 text-right">
+                                  Total recebido: {calcularTotalPago().toLocaleString('pt-BR', {
+                                    style: 'currency',
+                                    currency: 'BRL',
+                                  })}
+                                </p>
+                                <p className="text-yellow-300 mt-2 text-right">
+                                  Valor restante: {calcularValorRestante().toLocaleString('pt-BR', {
+                                    style: 'currency',
+                                    currency: 'BRL',
+                                  })}
+                                </p>
+                                {calcularValorRestante() < 0 && (
+                                  <p className="text-cyan-400 mt-2 text-right">
+                                    Troco: {(calcularValorRestante() * -1).toLocaleString('pt-BR', {
+                                      style: 'currency',
+                                      currency: 'BRL',
+                                    })}
+                                  </p>
+                                )}
 
 
 
@@ -941,6 +919,7 @@ useEffect(() => {
                                   type="button"
                                   className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded w-full"
                                   onClick={() => encerrarComanda(mesaSelecionada)}
+                                  disabled={Number(calcularValorRestante().toFixed(2)) !== 0}
                                 >
                                   Encerrar Comanda
                                 </button>

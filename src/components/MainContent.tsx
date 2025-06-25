@@ -6,12 +6,12 @@ import shopping from "../../src/assets/add-shopping-car.svg"
 
 export default function MainContent({ selected }: { selected: string }) {
 type Produto = {
-  id: number
-  nome: string
-  tamanho: string
-  descricao: string
-  price: number
-  imgProduto: string  
+  id: number;
+  nome: string;
+  tamanho: string;
+  descricao: string;
+  price: number;
+  imgProduto: string;
 }
 type Mesa = {
   id: number;
@@ -48,13 +48,30 @@ type PagamentoExtra = {
   forma: FormaPagamento;
   valor: number;
 };
-
+  type Comandas = {
+    id: number;
+    id_mesas: number;
+    aberta_em: string;
+    fechada_em: string;
+    observacoes: string;
+    nome_cliente: string;
+    id_colaborador: number;
+    id_loja: number;
+    status: boolean;
+    cpf_cliente: string;
+    taxa_status: boolean;
+    taxa_servico: number;
+    forma_pagamento: string;
+    mais_pagamentos: boolean;
+    numero_mesa: number;
+  }
 
   const [produtos, setProdutos] = useState<Produto[]>([])
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [mesaSelecionada, setMesaSelecionada] = useState<Mesa | null>(null);
   const [itensComanda, setItensComanda] = useState<ItemComanda[]>([]);
   const [itemSelecionado, setItemSelecionado] = useState<Produto | null>(null);
+  const [comandaAbertas, setComandaAbertas] = useState<Comandas[]>([])
   const [loja, setLoja] = useState<Loja[]> ([])
   const [mesasAtivas, setMesasAtivas] = useState<Mesa[]>([]);
   const [mesaParaAdicionar, setMesaParaAdicionar] = useState<Mesa | null>(null);
@@ -106,6 +123,7 @@ type PagamentoExtra = {
         taxa_status: false,
         cpf_cliente: cpfLimpo,
         mais_pagantes: false,
+        numero_mesa: mesa.numero,
       }])
       .select()
       .single();
@@ -372,11 +390,38 @@ type PagamentoExtra = {
     return calcularValorTotal() - calcularTotalPago();
 };
 
+  const buscarComandasAbertas = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('comandas')
+      .select('*')
+      .eq('status', true);
+
+    if (error) {
+      console.error('Erro ao buscar comandas abertas:', error.message);
+      return [];
+    }
+
+    return data; 
+  } catch (e) {
+    console.error('Erro inesperado:', e);
+    return [];
+  }
+};
+
+useEffect(() => {
+  const carregarComandas = async () => {
+    const comandas = await buscarComandasAbertas(); 
+    setComandaAbertas(comandas);
+  };
+
+  carregarComandas();
+}, []);
 
 
 
 
-// Tentar resolver pagamento logica 2
+// Pagina comandas 6
 
 
 
@@ -1014,7 +1059,50 @@ useEffect(() => {
   )
   const renderComandas = () => {
     return (
-      <h1 className="titulo-mesas">Comandas</h1>
+      <div>
+        <div>
+          <h1 className="titulo-mesas">Comandas</h1>
+        </div>
+        <div className="conteudo-mesas">
+                <div className="catalogo-grid-comandas">
+                    { comandaAbertas.map(comanda => (
+                      <div key={comanda.id} className="dinamico-comanda">
+                      <h2 className="font-bold text-lg">Mesa {comanda.numero_mesa}</h2>
+                      <p className="text-left">Nome: {comanda.nome_cliente} </p>
+                      <p className="text-left">CPF: {formatarCPF(comanda.cpf_cliente) ?? 'Não informado'}</p>
+                      <p className="text-left">Abertura: {new Date(comanda.aberta_em).toLocaleString()}</p>
+                      <div className="text-right">
+                                  <p className="text-xl font-bold text-white">
+                                    Total a pagar: R$ {calcularValorTotal().toFixed(2)}
+                                  </p>
+                                </div>
+                                <p className="text-green-400 mt-2 text-right">
+                                  Total recebido: {calcularTotalPago().toLocaleString('pt-BR', {
+                                    style: 'currency',
+                                    currency: 'BRL',
+                                  })}
+                                </p>
+                                <p className="text-yellow-300 mt-2 text-right">
+                                  Valor restante: {calcularValorRestante().toLocaleString('pt-BR', {
+                                    style: 'currency',
+                                    currency: 'BRL',
+                                  })}
+                                </p>
+                                {calcularValorRestante() < 0 && (
+                                  <p className="text-cyan-400 mt-2 text-right">
+                                    Troco: {(calcularValorRestante() * -1).toLocaleString('pt-BR', {
+                                      style: 'currency',
+                                      currency: 'BRL',
+                                    })}
+                                  </p>
+                                )}
+                    </div>
+                    ))}
+                </div> 
+        </div>            
+      </div>
+      
+      
     )
   }
   const renderCozinha = () => {

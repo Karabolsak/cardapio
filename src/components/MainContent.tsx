@@ -5,20 +5,6 @@ import { supabase } from "../supabaseClient"
 import shopping from "../../src/assets/add-shopping-car.svg"
 
 export default function MainContent({ selected }: { selected: string }) {
-const [error, setError] = useState<string | null>(null);
-const safeFetch = async <T,>(fn: () => Promise<T>): Promise<{ data?: T, error?: Error | null }> => {
-  try {
-    const data = await fn()
-    return { data, error: null }
-  } catch (error) {
-    console.error('Error in safeFetch:', error)
-    return { 
-      error: error instanceof Error ? error : new Error(String(error)),
-      data: undefined
-    }
-  }
-}
-
 type Produto = {
   id: number;
   nome: string;
@@ -121,8 +107,7 @@ type Comandas = {
 
   
  const abrirMesa = async (mesa: Mesa) => {
-  return safeFetch(async () => {
-    const { data: comandaExistente } = await supabase
+  const { data: comandaExistente } = await supabase
     .from('comandas')
     .select('id')
     .eq('id_mesa', mesa.id)
@@ -155,6 +140,7 @@ type Comandas = {
 
     setIdComandaSelecionada(novaComanda.id);
   }
+
   const { error: errorMesa } = await supabase
     .from("mesas")
     .update({ ativa: true })
@@ -164,88 +150,83 @@ type Comandas = {
     console.error("Erro ao ativar mesa:", errorMesa);
     return;
   }
+
   const atualizadas = todasMesas.map((m) =>
     m.id === mesa.id ? { ...m, ativa: true } : m
   );
   setTodasMesas(atualizadas);
   setMesaSelecionada({ ...mesa, ativa: true });
-  });  
 };
   const encerrarComanda = async (mesa: Mesa) => {
-    return safeFetch(async () => {
-      
-          const { data: comandasAbertas, error: fetchError } = await supabase
-          .from("comandas")
-          .select("*")
-          .eq("id_mesa", mesa.id)
-          .eq("status", true);
+  const { data: comandasAbertas, error: fetchError } = await supabase
+    .from("comandas")
+    .select("*")
+    .eq("id_mesa", mesa.id)
+    .eq("status", true);
 
-        if (fetchError || !comandasAbertas || comandasAbertas.length === 0) {
-          console.error("Nenhuma comanda aberta encontrada:", fetchError);
-          return;
-        }
+  if (fetchError || !comandasAbertas || comandasAbertas.length === 0) {
+    console.error("Nenhuma comanda aberta encontrada:", fetchError);
+    return;
+  }
 
-        const comanda = comandasAbertas[0];
+  const comanda = comandasAbertas[0];
 
-        const subtotal = itensComanda.reduce((total, item) => total + (item.quantidade * item.preco_unitario), 0);
-        const valorTaxa = taxaServico ? Number((subtotal * 0.1).toFixed(2)) : 0;
-        const dividirConta = setDividirConta;
+  const subtotal = itensComanda.reduce((total, item) => total + (item.quantidade * item.preco_unitario), 0);
+  const valorTaxa = taxaServico ? Number((subtotal * 0.1).toFixed(2)) : 0;
+  const dividirConta = setDividirConta;
 
-        const { error: updateComandaError } = await supabase
-          .from("comandas")
-          .update({ 
-            status: false, 
-            fechada_em: new Date().toISOString(),
-            taxa_status: taxaServico,
-            taxa_servico: valorTaxa,
-            forma_pagamento: formaPagamento || "não informado",
-            valor_comanda: calcularTotalPago(),
-            mais_pagantes: dividirConta,
-            numero_mesa: mesa.numero,
-          })
-          .eq("id", comanda.id);
+  const { error: updateComandaError } = await supabase
+    .from("comandas")
+    .update({ 
+      status: false, 
+      fechada_em: new Date().toISOString(),
+      taxa_status: taxaServico,
+      taxa_servico: valorTaxa,
+      forma_pagamento: formaPagamento || "não informado",
+      valor_comanda: calcularTotalPago(),
+      mais_pagantes: dividirConta,
+    })
+    .eq("id", comanda.id);
 
-        if (updateComandaError) {
-          console.error("Erro ao fechar comanda:", updateComandaError);
-          return;
-        }
-        const { error: updateMesaError } = await supabase
-            .from("mesas")
-            .update({ ativa: false })
-            .eq("id", mesa.id);
+  if (updateComandaError) {
+    console.error("Erro ao fechar comanda:", updateComandaError);
+    return;
+  }
+  const { error: updateMesaError } = await supabase
+      .from("mesas")
+      .update({ ativa: false })
+      .eq("id", mesa.id);
 
-          if (updateMesaError) {
-            console.error("Erro ao liberar mesa:", updateMesaError);
-            return;
-          }
-        const { error: updateItensError } = await supabase
-          .from("itens_comanda")
-          .update({ 
-            status: "encerrado", 
-            encerrado_em: new Date().toISOString() 
-          })
-          .eq("id_comanda", comanda.id);
+    if (updateMesaError) {
+      console.error("Erro ao liberar mesa:", updateMesaError);
+      return;
+    }
+  const { error: updateItensError } = await supabase
+    .from("itens_comanda")
+    .update({ 
+      status: "encerrado", 
+      encerrado_em: new Date().toISOString() 
+    })
+    .eq("id_comanda", comanda.id);
 
-        if (updateItensError) {
-          console.warn("Itens não foram encerrados corretamente:", updateItensError);
-          
-        }
-        const mesasAtualizadas = todasMesas.map((m) =>
-          m.id === mesa.id ? { ...m, ativa: false } : m
-        );
-        setTodasMesas(mesasAtualizadas);
-        setMesaSelecionada(null);
-        setTaxaServico(false);
-        setFormaPagamento("");
-        setItensComanda([]);
-        setNomeCliente("");
+  if (updateItensError) {
+    console.warn("Itens não foram encerrados corretamente:", updateItensError);
+    
+  }
+  const mesasAtualizadas = todasMesas.map((m) =>
+    m.id === mesa.id ? { ...m, ativa: false } : m
+  );
+  setTodasMesas(mesasAtualizadas);
+  setMesaSelecionada(null);
+  setTaxaServico(false);
+  setFormaPagamento("");
+  setItensComanda([]);
+  setNomeCliente("");
 
-        console.log("Comanda e itens encerrados com sucesso!");
-        });   
+  console.log("Comanda e itens encerrados com sucesso!");
 };
   const adicionarItemNaComanda = async () => {
-    return safeFetch(async () => {
-      if (!itemSelecionado || !idComandaSelecionada) {
+  if (!itemSelecionado || !idComandaSelecionada) {
     alert("Selecione um produto e certifique-se que a mesa tem uma comanda ativa.");
     return;
   }
@@ -278,7 +259,7 @@ type Comandas = {
     setItemSelecionado(null);
     setQuantidade(1);
   }
-  });    
+  
 };
   const calcularValorTotal = () => {
   const subtotal = itensComanda.reduce((total, item) => total + item.quantidade * item.preco_unitario, 0);
@@ -312,8 +293,7 @@ type Comandas = {
   return `${numeros.slice(0, 3)}.${numeros.slice(3, 6)}.${numeros.slice(6, 9)}-${numeros.slice(9, 11)}`;
 };
   const verificarOuCadastrarCliente = async () => {
-    return safeFetch(async () => {
-      if (!cpfCliente.trim() || !nomeCliente.trim()) {
+  if (!cpfCliente.trim() || !nomeCliente.trim()) {
     alert("Preencha o nome e CPF do cliente.");
     return;
   }
@@ -331,17 +311,15 @@ type Comandas = {
   }
 
   if (clienteExistente) {
-   
+    // Cliente já existe → abrir mesa diretamente
     abrirMesa(mesaSelecionada!);
   } else {
-    
+    // Cliente não existe → ativar formulário para cadastrar
     setCadastroClienteAtivo(true);
   }
-    });   
 };
   const cadastrarCliente = async ( mesa: Mesa ) => {
-    return safeFetch(async () => {
-      const { error } = await supabase.from('clientes').insert({
+  const { error } = await supabase.from('clientes').insert({
     nome: nomeCliente,
     cpf: cpfCliente,
     telefone: telefoneCliente,
@@ -358,7 +336,6 @@ type Comandas = {
 
   setCadastroClienteAtivo(false);
   abrirMesa(mesaSelecionada!);
-    });
 };
   const validarCamposObrigatorios = () => {
     if (!nomeCliente.trim()) {
@@ -419,8 +396,7 @@ type Comandas = {
     return calcularValorTotal() - calcularTotalPago();
 };
   const buscarComandasAbertas = async () => {
-    return safeFetch(async (): Promise<Comandas[]> => {
-      try {
+  try {
     const { data, error } = await supabase
       .from('comandas')
       .select('*')
@@ -436,11 +412,9 @@ type Comandas = {
     console.error('Erro inesperado:', e);
     return [];
   }
-  });  
 };
   const buscarComandas = async () => {
-    return safeFetch(async (): Promise<Comandas[]> => {
-      try {
+  try {
     const { data, error } = await supabase
       .from('comandas')
       .select('*')
@@ -456,13 +430,9 @@ type Comandas = {
     console.error('Erro inesperado:', e);
     return [];
   }
-  });  
 };
-  const itensComandaAtual = comandaSelecionada 
-    ? itensComanda.filter(item => item.id_comanda === comandaSelecionada.id)
-    : [];
   const calcularSubtotal = () => {
-    return itensComandaAtual.reduce(
+    return itensComandaSelecionada.reduce(
       (total, item) => total + (item.quantidade * item.preco_unitario), 
       0
     );
@@ -470,74 +440,55 @@ type Comandas = {
   const calcularTaxa = () => {
     return taxaServicoComanda ? calcularSubtotal() * 0.1 : 0;
 };
+
   const calcularTotal = () => {
     return calcularSubtotal() + calcularTaxa();
 };
+
   const calcularRestante = () => {
     return calcularTotal() - valorPagoComanda;
 };
   const finalizarComanda = async () => {
-  if (!comandaSelecionada) {
-    console.error('Nenhuma comanda selecionada')
-    return
-  }
+    if (!comandaSelecionada) return;
 
-  const result = await safeFetch(async () => {
-    // 1. Atualiza status da comanda
-    const { error: comandaError } = await supabase
-      .from('comandas')
-      .update({
-        status: false,
-        fechada_em: new Date().toISOString(),
-        // ... outros campos
-      })
-      .eq('id', comandaSelecionada.id)
+    try {
+      // Atualiza a comanda no banco de dados
+      const { error } = await supabase
+        .from('comandas')
+        .update({
+          status: false,
+          fechada_em: new Date().toISOString(),
+          taxa_status: taxaServicoComanda,
+          taxa_servico: calcularTaxa(),
+          forma_pagamento: formaPagamentoComanda,
+          valor_total: calcularTotal(),
+          valor_pago: valorPagoComanda
+        })
+        .eq('id', comandaSelecionada.id);
 
-    if (comandaError) throw comandaError
+      if (error) throw error;
 
-    // 2. Atualiza itens da comanda
-    const { error: itensError } = await supabase
-      .from('itens_comanda')
-      .update({ 
-        status: 'encerrado',
-        encerrado_em: new Date().toISOString()
-      })
-      .eq('id_comanda', comandaSelecionada.id)
+      // Libera a mesa associada
+      await supabase
+        .from('mesas')
+        .update({ ativa: false})
+        .eq('id', comandaSelecionada.id_mesas);
 
-    if (itensError) throw itensError
+      // Atualiza o estado
+      setComandaAbertas(comandaAbertas.filter(c => c.id !== comandaSelecionada.id));
+      setComandaSelecionada(null);
+      alert('Comanda encerrada com sucesso!');
 
-    // 3. Libera a mesa
-    const { error: mesaError } = await supabase
-      .from('mesas')
-      .update({ 
-        ativa: false,
-        id_comanda: null
-      })
-      .eq('id', comandaSelecionada.id_mesas)
-
-    if (mesaError) throw mesaError
-
-    // Atualiza o estado local
-    setComandaAbertas(prev => prev.filter(c => c.id !== comandaSelecionada.id))
-    setComandaSelecionada(null)
-    
-    return { success: true } // Retorno explícito
-  })
-
-  // Tratamento do resultado
-  if (result.error) {
-    console.error('Falha ao finalizar comanda:', result.error)
-    alert(`Erro: ${result.error.message}`)
-    return
-  }
-
-  alert('Comanda finalizada com sucesso!')
-  return result.data
-}
+    } catch (error) {
+      console.error('Erro ao finalizar comanda:', error);
+      alert('Erro ao finalizar comanda');
+    }
+};
 
 
 
-// Pagina comanda 11
+
+// Pagina comanda 10
 
 
 
@@ -547,8 +498,7 @@ type Comandas = {
 
 useEffect(() => {
   const fetchClientes = async () => {
-    return safeFetch(async () => {
-      setLoadingClientes(true)
+    setLoadingClientes(true)
     const { data, error } = await supabase.from('clientes').select('*')
     if (error) {
       console.error("Erro ao buscar clientes:", error)
@@ -556,16 +506,15 @@ useEffect(() => {
       setClientes(data || [])
     }
     setLoadingClientes(false)
-    });  
   }
+
   if (selected === "Clientes") {
     fetchClientes()
   }
 }, [selected])
 useEffect(() => {
   const fetchProdutos = async () => {
-    return safeFetch(async () => {
-      setLoadingProdutos(true)
+    setLoadingProdutos(true)
     const { data, error } = await supabase.from('produtos').select('*')
     if (error) {
       console.error("Erro ao buscar produtos", error)
@@ -573,16 +522,15 @@ useEffect(() => {
       setProdutos(data || [])
     }
     setLoadingProdutos(false)
-    });    
-  };
+  }
+
   if (selected === "Produtos") {
     fetchProdutos()
   }
 }, [selected])
 useEffect(() => {
   const fetchLojaEMesas = async () => {
-    return safeFetch(async () => {
-      const { data: lojas, error: erroLoja } = await supabase.from('loja').select('*');
+    const { data: lojas, error: erroLoja } = await supabase.from('loja').select('*');
     if (erroLoja) {
       console.error("Erro ao buscar loja", erroLoja);
       return;
@@ -603,8 +551,8 @@ useEffect(() => {
       }
       setLoading(false);
     }
-    });
   };
+
   fetchLojaEMesas();
 }, []);
 useEffect(() => {
@@ -614,9 +562,10 @@ useEffect(() => {
     setIdComandaSelecionada(null);
     return;
   }
+
   const carregarDadosMesa = async () => {
-    return safeFetch(async () => {
-      const { data: comanda } = await supabase
+    // Busca a comanda ativa para a mesa
+    const { data: comanda } = await supabase
       .from('comandas')
       .select('id, nome_cliente')
       .eq('id_mesa', mesaSelecionada.id)
@@ -627,6 +576,7 @@ useEffect(() => {
       setNomeCliente(comanda.nome_cliente || "");
       setIdComandaSelecionada(comanda.id);
 
+      // Busca os itens da comanda
       const { data: itens } = await supabase
         .from('itens_comanda')
         .select('*')
@@ -634,8 +584,8 @@ useEffect(() => {
 
       setItensComanda(itens || []);
     }
-    });
   };
+
   carregarDadosMesa();
 }, [mesaSelecionada]);
 useEffect(() => {
@@ -645,14 +595,12 @@ useEffect(() => {
 }, [itemSelecionado]);
 useEffect(() => {
   const fetchMesasAtivas = async () => {
-    return safeFetch(async () => {
-      const { data, error } = await supabase
+    const { data, error } = await supabase
       .from("mesas")
       .select("*")
       .eq("ativa", true);
 
     if (!error) setMesasAtivas(data);
-    });    
   };
   fetchMesasAtivas();
 }, []);
@@ -667,25 +615,21 @@ useEffect(() => {
 }, [dividirConta, quantidade]);
 useEffect(() => {
   const carregarComandas = async () => {
-    const result = await safeFetch<Comandas[]>(async () => {
-      const comandas = await buscarComandasAbertas();
-      // Pode adicionar transformações aqui se necessário
-      return comandas;
-    });
-
-    if (result.error) {
-      console.error('Falha ao carregar comandas:', result.error);
-      return;
-    }
-
-    if (result.data) {
-      setComandaAbertas(result.data);
-    }
+    const comandas = await buscarComandasAbertas(); 
+    setComandaAbertas(comandas);
   };
-
+  
   carregarComandas();
 }, []);
 useEffect(() => {
+  const carregarComandas = async () => {
+    const comandas = await buscarComandas(); // Mudei o nome da função para ser mais genérico
+    setComandaAbertas(comandas);
+  };
+  
+  carregarComandas();
+}, []);
+ useEffect(() => {
     if (!comandaSelecionada) {
       setItensComandaSelecionada([]);
       return;
@@ -705,6 +649,8 @@ useEffect(() => {
 
     carregarItensComanda();
   }, [comandaSelecionada]);
+  
+ 
 
 
 
@@ -760,20 +706,32 @@ useEffect(() => {
                     <label className="block text-sm mb-1 text-white">Selecionar mesa ativa:</label>
                     <div className="mb-4">
                       <select
-                        value={mesaParaAdicionar ? String(mesaParaAdicionar.id) : ""}
-                        onChange={(e) => {
-                          const idSelecionado = e.target.value;
-                          if (idSelecionado === "") {
-                            setMesaParaAdicionar(null);
-                            return;
-                          }
-                          const mesaSelecionada = mesasAtivas.find(
-                            (mesa) => String(mesa.id) === idSelecionado
-                          );
-                          console.log("ID selecionado:", idSelecionado);
-                          console.log("Mesa encontrada:", mesaSelecionada);
-                          setMesaParaAdicionar(mesaSelecionada || null);
-                        }}>
+                         value={mesaParaAdicionar ? String(mesaParaAdicionar.id) : ""}
+                          onChange={async (e) => {
+                            const idSelecionado = e.target.value;
+                            if (idSelecionado === "") {
+                              setMesaParaAdicionar(null);
+                              setIdComandaSelecionada(null);
+                              return;
+                            }
+                            const mesaSelecionada = mesasAtivas.find(
+                              (mesa) => String(mesa.id) === idSelecionado
+                            );
+                            setMesaParaAdicionar(mesaSelecionada || null);
+                            
+                            // Busca a comanda ativa para a mesa selecionada
+                            if (mesaSelecionada) {
+                              const { data: comanda } = await supabase
+                                .from('comandas')
+                                .select('id')
+                                .eq('id_mesa', mesaSelecionada.id)
+                                .eq('status', true)
+                                .single();
+                                
+                              setIdComandaSelecionada(comanda?.id || null);
+                            }
+                          }}
+                        >
                         <option value="">Selecione uma mesa</option>
                         {mesasAtivas.map((mesa) => (
                           <option key={mesa.id} value={String(mesa.id)}>
@@ -820,15 +778,15 @@ useEffect(() => {
                 </div>
                 <button
                   className={`bg-green-500 hover:bg-green-600 px-4 py-2 rounded w-full ${
-                    !mesaParaAdicionar || !idComandaSelecionada == null ? "opacity-50 cursor-not-allowed" : ""
+                    !mesaParaAdicionar || !idComandaSelecionada  ? "opacity-50 cursor-not-allowed" : ""
                   }`}
                   onClick={async () => {
-                    if (!mesaParaAdicionar || !idComandaSelecionada == null) return;
+                    if (!mesaParaAdicionar || !idComandaSelecionada) return;
                     await adicionarItemNaComanda();
                     setMensagemSucesso("Item adicionado com sucesso!");
                     setTimeout(() => setMensagemSucesso(null), 3000);
                   }}
-                  disabled={!mesaParaAdicionar || !idComandaSelecionada == null}
+                  disabled={!mesaParaAdicionar || !idComandaSelecionada}
                 >
                   Adicionar ao pedido
                 </button>
@@ -1213,6 +1171,8 @@ useEffect(() => {
     </div>
   )
   const renderComandas = () => {
+  
+
   return (
     <div>
       <h1 className="titulo-mesas">Comandas</h1>
@@ -1400,7 +1360,7 @@ useEffect(() => {
     <div className="flex-1 p-8 text-white">
       {mensagemSucesso && (
         <div className="bg-green-600 text-white p-2 rounded mb-4">
-         {error} {mensagemSucesso}
+          {mensagemSucesso}
         </div>
       )}
 

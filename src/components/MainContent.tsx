@@ -42,29 +42,30 @@ type ItemComanda = {
   adicionado_em: string;
   id_colaborador: number;
   status: boolean;
+  id_comanda: number;
 };
 type FormaPagamento = 'dinheiro' | 'pix' | 'cartao_credito' | 'cartao_debito';
 type PagamentoExtra = {
   forma: FormaPagamento;
   valor: number;
 };
-  type Comandas = {
-    id: number;
-    id_mesas: number;
-    aberta_em: string;
-    fechada_em: string;
-    observacoes: string;
-    nome_cliente: string;
-    id_colaborador: number;
-    id_loja: number;
-    status: boolean;
-    cpf_cliente: string;
-    taxa_status: boolean;
-    taxa_servico: number;
-    forma_pagamento: string;
-    mais_pagamentos: boolean;
-    numero_mesa: number;
-  }
+type Comandas = {
+  id: number;
+  id_mesas: number;
+  aberta_em: string;
+  fechada_em: string;
+  observacoes: string;
+  nome_cliente: string;
+  id_colaborador: number;
+  id_loja: number;
+  status: boolean;
+  cpf_cliente: string;
+  taxa_status: boolean;
+  taxa_servico: number;
+  forma_pagamento: string;
+  mais_pagamentos: boolean;
+  numero_mesa: number;
+}
 
   const [produtos, setProdutos] = useState<Produto[]>([])
   const [clientes, setClientes] = useState<Cliente[]>([]);
@@ -389,7 +390,6 @@ type PagamentoExtra = {
   const calcularValorRestante = (): number => {
     return calcularValorTotal() - calcularTotalPago();
 };
-
   const buscarComandasAbertas = async () => {
   try {
     const { data, error } = await supabase
@@ -408,20 +408,30 @@ type PagamentoExtra = {
     return [];
   }
 };
+const buscarComandas = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('comandas')
+      .select('*')
+      .order('aberta_em', { ascending: false }); 
 
-useEffect(() => {
-  const carregarComandas = async () => {
-    const comandas = await buscarComandasAbertas(); 
-    setComandaAbertas(comandas);
-  };
+    if (error) {
+      console.error('Erro ao buscar comandas:', error.message);
+      return [];
+    }
 
-  carregarComandas();
-}, []);
+    return data; 
+  } catch (e) {
+    console.error('Erro inesperado:', e);
+    return [];
+  }
+};
 
 
 
 
-// Pagina comandas 6
+
+// Pagina comanda 9
 
 
 
@@ -546,7 +556,22 @@ useEffect(() => {
     setFormasPagamentosExtras([]);
   }
 }, [dividirConta, quantidade]);
-
+useEffect(() => {
+  const carregarComandas = async () => {
+    const comandas = await buscarComandasAbertas(); 
+    setComandaAbertas(comandas);
+  };
+  
+  carregarComandas();
+}, []);
+useEffect(() => {
+  const carregarComandas = async () => {
+    const comandas = await buscarComandas(); // Mudei o nome da função para ser mais genérico
+    setComandaAbertas(comandas);
+  };
+  
+  carregarComandas();
+}, []);
 
 
 
@@ -626,8 +651,6 @@ useEffect(() => {
                       </select>
                     </div>
                   </div>
-                  
-                  
                     <div className="mb-4">
                       <label className="block text-sm mb-1 text-white">Quantidade:</label>
                       <div className="flex items-center space-x-3 bg-gray-800 px-4 py-2 rounded w-fit" >
@@ -665,15 +688,15 @@ useEffect(() => {
                 </div>
                 <button
                   className={`bg-green-500 hover:bg-green-600 px-4 py-2 rounded w-full ${
-                    !mesaParaAdicionar || !idComandaSelecionada ? "opacity-50 cursor-not-allowed" : ""
+                    !mesaParaAdicionar || !idComandaSelecionada == null ? "opacity-50 cursor-not-allowed" : ""
                   }`}
                   onClick={async () => {
-                    if (!mesaParaAdicionar || !idComandaSelecionada) return;
+                    if (!mesaParaAdicionar || !idComandaSelecionada == null) return;
                     await adicionarItemNaComanda();
                     setMensagemSucesso("Item adicionado com sucesso!");
                     setTimeout(() => setMensagemSucesso(null), 3000);
                   }}
-                  disabled={!mesaParaAdicionar || !idComandaSelecionada}
+                  disabled={!mesaParaAdicionar || !idComandaSelecionada == null}
                 >
                   Adicionar ao pedido
                 </button>

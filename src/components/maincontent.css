@@ -139,6 +139,8 @@
   border-radius: 20px;
 }.dinamico-comanda P {
   margin: 0;
+}.dinamico-comanda h2 {
+  margin: 0;
 }.dinamico-comanda li {
   padding: 0px;
 }.conteudo-produtos {

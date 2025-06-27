@@ -5,6 +5,7 @@ import { supabase } from "../supabaseClient"
 import shopping from "../../src/assets/add-shopping-car.svg"
 
 export default function MainContent({ selected }: { selected: string }) {
+  
 type Produto = {
   id: number;
   nome: string;
@@ -43,6 +44,8 @@ type ItemComanda = {
   id_colaborador: number;
   status: boolean;
   id_comanda: number;
+  encerrado_em: string;
+  tempo_entrega: string;
 };
 type FormaPagamento = 'dinheiro' | 'pix' | 'cartao_credito' | 'cartao_debito';
 type PagamentoExtra = {
@@ -51,7 +54,7 @@ type PagamentoExtra = {
 };
 type Comandas = {
   id: number;
-  id_mesas: number;
+  id_mesa: number;
   aberta_em: string;
   fechada_em: string;
   observacoes: string;
@@ -453,17 +456,15 @@ type Comandas = {
     if (!comandaSelecionada) return;
 
     try {
-      // Atualiza a comanda no banco de dados
       const { error } = await supabase
         .from('comandas')
         .update({
           status: false,
           fechada_em: new Date().toISOString(),
-          taxa_status: taxaServicoComanda,
+          taxa_status: calcularTaxa(),
           taxa_servico: calcularTaxa(),
           forma_pagamento: formaPagamentoComanda,
-          valor_total: calcularTotal(),
-          valor_pago: valorPagoComanda
+          valor_comanda: calcularTotal(),
         })
         .eq('id', comandaSelecionada.id);
 
@@ -473,7 +474,8 @@ type Comandas = {
       await supabase
         .from('mesas')
         .update({ ativa: false})
-        .eq('id', comandaSelecionada.id_mesas);
+        .eq('id', comandaSelecionada.id_mesa);
+        
 
       // Atualiza o estado
       setComandaAbertas(comandaAbertas.filter(c => c.id !== comandaSelecionada.id));
@@ -638,8 +640,7 @@ useEffect(() => {
   carregar();
   console.log("Página carregou com status:", statusAtivo);
 }, [statusAtivo]);
-
- useEffect(() => {
+useEffect(() => {
     if (!comandaSelecionada) {
       setItensComandaSelecionada([]);
       return;
@@ -658,7 +659,7 @@ useEffect(() => {
     };
 
     carregarItensComanda();
-  }, [comandaSelecionada]);
+}, [comandaSelecionada]);
   
  
 
@@ -1335,7 +1336,6 @@ useEffect(() => {
               </button>
               <button
                 onClick={finalizarComanda}
-                disabled={calcularRestante() > 0 || !formaPagamentoComanda}
                 className={`bg-green-500 hover:bg-green-600 px-4 py-2 rounded flex-1 ${
                   calcularRestante() > 0 || !formaPagamentoComanda ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
@@ -1392,7 +1392,9 @@ useEffect(() => {
   }
 
   return (
+    
     <div className="flex-1 p-8 text-white">
+      
       {mensagemSucesso && (
         <div className="bg-green-600 text-white p-2 rounded mb-4">
           {mensagemSucesso}
@@ -1401,6 +1403,7 @@ useEffect(() => {
 
       <div className="bg-gray-800 p-6 rounded-lg shadow-md">
         {renderContent()}
+        
       </div>
             
     </div>

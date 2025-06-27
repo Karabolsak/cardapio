@@ -253,33 +253,25 @@
 .catalogo-grid-comandas {
   flex: 2;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   max-height: 100%;
-  margin: 20px;
-}
-
-.paginaComandas {
+  gap: 20px;
+}.paginaComandas {
   border-bottom: #BACBD9 1px dashed;
   margin: 5px 5px 20px 5px;
   text-align: -webkit-left;
-  display: flex;
-  
-}
-.paginaComandas h1 {
+  display: flex;  
+}.paginaComandas h1 {
   margin: 0;
-}
-.buttonComandas button {
+}.buttonComandas button {
   margin-left: 20px;
   height: 40px;
   width: 100px;
   border-radius: 10px;
-}
-.buttonComandas {
+}.buttonComandas {
   display: flex;
   gap: 12px;
-}
-.botao-status {
+}.botao-status {
   border: none;
   border-radius: 8px;
   font-weight: bold;
@@ -290,26 +282,55 @@
   transition: background 0.4s ease-in-out, color 0.3s;
   position: relative;
   overflow: hidden;
-}
-
-.botao-status.ativo {
+}.botao-status.ativo {
   color: white;
   background: linear-gradient(-45deg, #4ade80, #22c55e, #16a34a); /* tons de verde */
   background-size: 200% 200%;
   animation: moveGradient 1s ease forwards;
-}
-
-.botao-status.ativo[data-status="encerradas"] {
+}.botao-status.ativo[data-status="encerradas"] {
   background: linear-gradient(-45deg, #f87171, #ef4444, #b91c1c); /* tons de vermelho */
   background-size: 200% 200%;
   animation: moveGradient 1s ease forwards;
-}
-
-@keyframes moveGradient {
+}@keyframes moveGradient {
   0% {
     background-position: 0% 50%;
   }
   100% {
     background-position: 100% 50%;
   }
+}
+
+.comandasInfoATIVA {
+  border-style: var(--tw-border-style);
+  border-width: 2px;
+}
+.comandasInfoINATIVA {
+   box-shadow:
+    0 0 1px 1px rgba(179, 250, 131, 0.8);
+}
+.comanda {
+    position: relative;
+    padding: 20px;
+    border-radius: 12px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 1.2rem;
+    color: white;
+    cursor: pointer;
+    overflow: visible;
+    transition: transform 0.3s ease;
+}.comanda:hover {
+  transform: scale(1.05);
+  box-shadow:
+    0 0 1px 1px rgba(179, 250, 131, 0.8);
+}
+.comandaInfoENCERRADA {
+  box-shadow:
+    0 0 1px 1px rgba(250, 131, 131, 0.8);
+}
+.aberta {
+  color: #00E676;
+}
+.fechada {
+  color: red
 }

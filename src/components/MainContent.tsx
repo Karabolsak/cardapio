@@ -1182,8 +1182,6 @@ useEffect(() => {
     </div>
   )
   const renderComandas = () => {
-  
-
   return (
     <div>
       <div className="paginaComandas">
@@ -1207,7 +1205,6 @@ useEffect(() => {
           </button>
         </div>
     </div>
-      
       <div className="conteudo-geral">
         {/* Lista de comandas */}
         <div className="conteudo-mesas">
@@ -1215,14 +1212,14 @@ useEffect(() => {
             {comandaAbertas.map(comanda => (
               <div
                 key={comanda.id}
-                className={`mesa ${comandaSelecionada?.id === comanda.id ? 'border-2 border-yellow-400' : ''}`}
+                className={`comanda ${comandaSelecionada?.id === comanda.id ? 'comandasInfoATIVA' : 'comandasInfoINATIVA'}`}
                 onClick={() => setComandaSelecionada(comanda)}
               >
                 <h3>Mesa {comanda.numero_mesa}</h3>
                 <p>{comanda.nome_cliente || 'Sem nome'}</p>
                 <p>{new Date(comanda.aberta_em).toLocaleTimeString()}</p>
                 <span className={`status ${comanda.status ? 'aberta' : 'fechada'}`}>
-                  {comanda.status ? 'Aberta' : 'Fechada'}
+                  {comanda.status ? 'Aberta' : 'Fechada'} - Detalhes 
                 </span>
               </div>
             ))}

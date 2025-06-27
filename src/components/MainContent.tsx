@@ -103,7 +103,7 @@ type Comandas = {
   const [taxaServicoComanda, setTaxaServicoComanda] = useState(false);
   const [formaPagamentoComanda, setFormaPagamentoComanda] = useState<FormaPagamento | ''>('');
   const [valorPagoComanda, setValorPagoComanda] = useState(0);
-
+  const [statusAtivo, setStatusAtivo] = useState<"abertas" | "encerradas">("abertas");
 
   
  const abrirMesa = async (mesa: Mesa) => {
@@ -413,19 +413,22 @@ type Comandas = {
     return [];
   }
 };
-  const buscarComandas = async () => {
+  const buscarComandas = async (statusAtivo: "abertas" | "encerradas") => {
   try {
+    const statusBoolean = statusAtivo === "abertas"; // converte para true ou false
+
     const { data, error } = await supabase
       .from('comandas')
       .select('*')
-      .order('aberta_em', { ascending: false }); 
+      .eq('status', statusBoolean)
+      .order('aberta_em', { ascending: false });
 
     if (error) {
       console.error('Erro ao buscar comandas:', error.message);
       return [];
     }
 
-    return data; 
+    return data ?? [];
   } catch (e) {
     console.error('Erro inesperado:', e);
     return [];
@@ -440,11 +443,9 @@ type Comandas = {
   const calcularTaxa = () => {
     return taxaServicoComanda ? calcularSubtotal() * 0.1 : 0;
 };
-
   const calcularTotal = () => {
     return calcularSubtotal() + calcularTaxa();
 };
-
   const calcularRestante = () => {
     return calcularTotal() - valorPagoComanda;
 };
@@ -484,11 +485,19 @@ type Comandas = {
       alert('Erro ao finalizar comanda');
     }
 };
+const botoes = document.querySelectorAll(".botao-status");
+
+botoes.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    botoes.forEach((b) => b.classList.remove("ativo"));
+    btn.classList.add("ativo");
+  });
+});
 
 
 
 
-// Pagina comanda 10
+// Pagina comanda 11
 
 
 
@@ -507,7 +516,6 @@ useEffect(() => {
     }
     setLoadingClientes(false)
   }
-
   if (selected === "Clientes") {
     fetchClientes()
   }
@@ -622,13 +630,15 @@ useEffect(() => {
   carregarComandas();
 }, []);
 useEffect(() => {
-  const carregarComandas = async () => {
-    const comandas = await buscarComandas(); // Mudei o nome da função para ser mais genérico
-    setComandaAbertas(comandas);
+  const carregar = async () => {
+    const dados = await buscarComandas(statusAtivo);
+    setComandaAbertas(dados);
   };
-  
-  carregarComandas();
-}, []);
+
+  carregar();
+  console.log("Página carregou com status:", statusAtivo);
+}, [statusAtivo]);
+
  useEffect(() => {
     if (!comandaSelecionada) {
       setItensComandaSelecionada([]);
@@ -1175,7 +1185,28 @@ useEffect(() => {
 
   return (
     <div>
-      <h1 className="titulo-mesas">Comandas</h1>
+      <div className="paginaComandas">
+        <div>
+          <h1>Gestão de Comandas</h1>
+        </div>
+        <div className="buttonComandas">
+          <button
+            className={`botao-status ${statusAtivo === "abertas" ? "ativo" : ""}`}
+            data-status="abertas"
+            onClick={() => setStatusAtivo("abertas")}
+          >
+            Abertas
+          </button>
+          <button
+            className={`botao-status ${statusAtivo === "encerradas" ? "ativo" : ""}`}
+            data-status="encerradas"
+            onClick={() => setStatusAtivo("encerradas")}
+          >
+            Encerradas
+          </button>
+        </div>
+    </div>
+      
       <div className="conteudo-geral">
         {/* Lista de comandas */}
         <div className="conteudo-mesas">
@@ -1325,7 +1356,11 @@ useEffect(() => {
   }
   const renderBar = () => {
     return (
-      <h1 className="titulo-mesas">Bar</h1>
+      <div>
+        <h1 className="titulo-mesas">Bar</h1>
+      </div>
+      
+      
     )
   }
   const renderDash = () => {

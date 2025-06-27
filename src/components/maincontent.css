@@ -259,3 +259,57 @@
   margin: 20px;
 }
 
+.paginaComandas {
+  border-bottom: #BACBD9 1px dashed;
+  margin: 5px 5px 20px 5px;
+  text-align: -webkit-left;
+  display: flex;
+  
+}
+.paginaComandas h1 {
+  margin: 0;
+}
+.buttonComandas button {
+  margin-left: 20px;
+  height: 40px;
+  width: 100px;
+  border-radius: 10px;
+}
+.buttonComandas {
+  display: flex;
+  gap: 12px;
+}
+.botao-status {
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  color: white;
+  cursor: pointer;
+  background-color: #e5e7eb; /* cinza claro para inativo */
+  color: #333;
+  transition: background 0.4s ease-in-out, color 0.3s;
+  position: relative;
+  overflow: hidden;
+}
+
+.botao-status.ativo {
+  color: white;
+  background: linear-gradient(-45deg, #4ade80, #22c55e, #16a34a); /* tons de verde */
+  background-size: 200% 200%;
+  animation: moveGradient 1s ease forwards;
+}
+
+.botao-status.ativo[data-status="encerradas"] {
+  background: linear-gradient(-45deg, #f87171, #ef4444, #b91c1c); /* tons de vermelho */
+  background-size: 200% 200%;
+  animation: moveGradient 1s ease forwards;
+}
+
+@keyframes moveGradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 100% 50%;
+  }
+}

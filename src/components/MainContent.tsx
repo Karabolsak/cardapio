@@ -68,6 +68,7 @@ type Comandas = {
   forma_pagamento: string;
   mais_pagamentos: boolean;
   numero_mesa: number;
+  quantidade_pagantes: number;
 }
 
   const [produtos, setProdutos] = useState<Produto[]>([])
@@ -109,7 +110,7 @@ type Comandas = {
   const [statusAtivo, setStatusAtivo] = useState<"abertas" | "encerradas">("abertas");
 
   
- const abrirMesa = async (mesa: Mesa) => {
+  const abrirMesa = async (mesa: Mesa) => {
   const { data: comandaExistente } = await supabase
     .from('comandas')
     .select('id')
@@ -188,6 +189,7 @@ type Comandas = {
       forma_pagamento: formaPagamento || "não informado",
       valor_comanda: calcularTotalPago(),
       mais_pagantes: dividirConta,
+      quantidade_pagantes: quantidade,
     })
     .eq("id", comanda.id);
 
@@ -457,7 +459,8 @@ type Comandas = {
     return calcularSubtotal() + calcularTaxa();
 };
   const calcularRestante = () => {
-    return calcularTotal() - valorPagoComanda;
+    const maisPagamentos = formasPagamentosExtras.reduce((acc, item) => acc +item.valor, 0);
+    return calcularTotal() - valorPagoComanda - maisPagamentos;
 };
   const finalizarComanda = async () => {
     if (!comandaSelecionada) return;
@@ -472,6 +475,8 @@ type Comandas = {
           taxa_servico: calcularTaxa(),
           forma_pagamento: formaPagamentoComanda,
           valor_comanda: calcularTotal(),
+          mais_pagantes: dividirConta,
+          quantidade_pagantes: quantidade,
         })
         .eq('id', comandaSelecionada.id);
 
@@ -506,7 +511,7 @@ botoes.forEach((btn) => {
 
 
 
-// Pagina comanda 12
+// Pagina comanda 13
 
 
 
@@ -1244,11 +1249,11 @@ useEffect(() => {
 
             {/* Itens da comanda */}
             <div className="mb-6">
-              <h3 className="font-semibold mb-2">Itens:</h3>
+              <p className="font-semibold mb-2">Itens da comanda:</p>
               {itensComandaSelecionada.length === 0 ? (
                 <p className="text-gray-400">Nenhum item adicionado</p>
               ) : (
-                <ul className="space-y-2">
+                <ul className="mb-4 space-y-2">
                   {itensComandaSelecionada.map(item => (
                     <li key={item.id} className="flex justify-between">
                       <span>
@@ -1265,19 +1270,30 @@ useEffect(() => {
 
             {/* Resumo financeiro */}
             <div className="border-t pt-4 mb-6">
+              <div className="flex items-center justify-between">
+              <label className="flex items-center space-x-2" style={{ marginBottom: 10, marginTop: 10 }}>
+                <input
+                  type="checkbox"
+                  checked={taxaServico} // Aqui deve ser o estado booleano real
+                  onChange={() => setTaxaServico(!taxaServico)}
+                  
+                  className="h-4 w-4 text-blue-600 rounded"
+                />
+                <span>
+                  Taxa de serviço ({(taxaPercentual * 100).toFixed(0)}%)
+                </span>
+              </label>
+            </div>
               <div className="flex justify-between mb-1">
                 <span>Subtotal:</span>
                 <span>R$ {calcularSubtotal().toFixed(2)}</span>
               </div>
-              
-              <div className="flex justify-between mb-1">
-                <span>Taxa de serviço (10%):</span>
+              <div className="taxaComanda">
+                <span>Taxa:</span>
                 <span>
-                  R$ {taxaServicoComanda !== true ? formatarValorTaxa(calcularTaxa()) : '--'}
+                  {taxaServicoComanda !== true ? formatarValorTaxa(calcularTaxa()) : '--'}
                 </span>
-
               </div>
-              
               <div className="flex justify-between font-bold text-lg mt-2">
                 <span>Total:</span>
                 <span>R$ {calcularTotal().toFixed(2)}</span>
@@ -1298,38 +1314,114 @@ useEffect(() => {
                 <option value="cartao_debito">Cartão de Débito</option>
                 <option value="cartao_credito">Cartão de Crédito</option>
               </select>
+              {['pix', 'dinheiro', 'cartao_debito', 'cartao_credito'].includes(formaPagamentoComanda) && (
+                <div className="mb-4">
+                  <label className="block mb-2">Valor Recebido:</label>
+                  <input
+                    type="text"
+                    value={valorPagoComanda.toLocaleString('pt-BR', {
+                      style: 'currency',
+                      currency: 'BRL'
+                    })}
+                    onChange={(e) => {
+                      const apenasNumeros = e.target.value.replace(/\D/g, '');
+                      const valor = Number(apenasNumeros) / 100;
+                      setValorPagoComanda(valor);
+                    }}
+                    className="w-full p-2 rounded bg-gray-700"
+                  />
+                </div>
+              )}
             </div>
+              <div className="dividir-conta">
+                <label className="text-white mr-2">Dividir conta?</label>
+                <input 
+                  type="checkbox" 
+                  checked={dividirConta}
+                  onChange={() => setDividirConta(!dividirConta)}
+                  className="h-4 w-4 text-blue-600 rounded"
+                />
+                {dividirConta && (
+                  <div className="botton-dividir">
+                    <button
+                      onClick={() => setQuantidade((prev) => Math.max(1, prev - 1))}
+                      className="text-white text-lg px-2 hover:text-red-400"
+                      style={{ marginRight: 15 }}
+                    >
+                      −
+                    </button>
+                    <span 
+                      className="text-white font-semibold"
+                      style={{ marginRight: 15 }}
+                    >
+                      {quantidade}
+                    </span>
+                    <button
+                      onClick={() => setQuantidade((prev) => prev + 1)}
+                      className="text-white text-lg px-2 hover:text-green-400"
+                    >
+                      +
+                    </button>
+                  </div>
+                )}
+                
+              </div>
+              {dividirConta && quantidade > 1 && (
+                                  <div className="mt-4 space-y-4">
+                                    {formasPagamentosExtras.map((pagamento, index) => (
+                                      <div key={index} className="pagamentos-extras">
+                                        <label className="block text-white mb-2">
+                                          Pagamento adicional {index + 2}
+                                        </label>
 
-            {/* Valor pago */}
-            <div className="mb-4">
-              <label className="block mb-2">Valor Recebido:</label>
-              <input
-                type="text"
-                value={valorPagoComanda.toLocaleString('pt-BR', {
-                  style: 'currency',
-                  currency: 'BRL'
-                })}
-                onChange={(e) => {
-                  const apenasNumeros = e.target.value.replace(/\D/g, '');
-                  const valor = Number(apenasNumeros) / 100;
-                  setValorPagoComanda(valor);
-                }}
-                className="w-full p-2 rounded bg-gray-700"
-              />
-            </div>
-              <div className="flex items-center justify-between">
-  <label className="flex items-center space-x-2">
-    <input
-      type="checkbox"
-      checked={taxaServico} // Aqui deve ser o estado booleano real
-      onChange={() => setTaxaServico(!taxaServico)}
-      className="h-4 w-4 text-blue-600 rounded"
-    />
-    <span>
-      Taxa de serviço ({(taxaPercentual * 100).toFixed(0)}%)
-    </span>
-  </label>
-</div>
+                                        <select
+                                          value={pagamento.forma}
+                                          onChange={(e) => {
+                                            const novasFormas = [...formasPagamentosExtras];
+                                            novasFormas[index] = {
+                                              ...novasFormas[index],
+                                              forma: e.target.value as FormaPagamento,
+                                            };
+                                            setFormasPagamentosExtras(novasFormas);
+                                          }}
+                                          className="w-full mb-2 px-3 py-2 rounded bg-gray-800 text-white border border-gray-600"
+                                        >
+                                          {Object.entries(formasPagamentoLabels).map(([value, label]) => (
+                                            <option key={value} value={value}>
+                                              {label}
+                                            </option>
+                                          ))}
+                                        </select>
+                                        <label>Insira o valor recebido: </label>
+                                        <input
+                                          type="text"
+                                          value={pagamento.valor.toLocaleString('pt-BR', {
+                                            style: 'currency',
+                                            currency: 'BRL'
+                                          })}
+                                          onChange={(e) => {
+                                            const novasFormas = [...formasPagamentosExtras];
+                                            const valorBruto = e.target.value.replace(/\D/g, '');
+                                            const valor = Number((parseFloat(valorBruto) / 100).toFixed(2)); // 👈 corrige o ponto flutuante
+                                            novasFormas[index] = {
+                                              ...novasFormas[index],
+                                              valor: valor,
+                                            };
+                                            setFormasPagamentosExtras(novasFormas);
+                                          }}
+
+                                          className="w-full px-3 py-2 rounded bg-gray-800 text-white border border-gray-600"
+                                          placeholder="R$ 0,00"
+                                        />
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+
+
+              
+
+
 
             {/* Resumo de pagamento */}
             <div className="border-t pt-4 mb-6">

@@ -137,6 +137,7 @@
   padding: 10px;
   margin-right: 20px;
   border-radius: 20px;
+  height: fit-content;
 }.dinamico-comanda P {
   margin: 0;
 }.dinamico-comanda h2 {
@@ -333,4 +334,10 @@
 }
 .fechada {
   color: red
+}
+.taxaComanda {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.25rem;
+  gap: 10px;
 }

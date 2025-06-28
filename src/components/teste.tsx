@@ -444,7 +444,14 @@ type Comandas = {
     );
 };
   const calcularTaxa = () => {
-    return taxaServicoComanda ? calcularSubtotal() * 0.1 : 0;
+     const subtotal = itensComandaSelecionada.reduce(
+    (total, item) => total + item.quantidade * item.preco_unitario,
+    0
+  );
+
+  const taxaServicoComanda = taxaServico ? subtotal * 0.1 : 0;
+
+  return Number(taxaServicoComanda.toFixed(2)); 
 };
   const calcularTotal = () => {
     return calcularSubtotal() + calcularTaxa();
@@ -461,7 +468,7 @@ type Comandas = {
         .update({
           status: false,
           fechada_em: new Date().toISOString(),
-          taxa_status: calcularTaxa(),
+          taxa_status: taxaServico,
           taxa_servico: calcularTaxa(),
           forma_pagamento: formaPagamentoComanda,
           valor_comanda: calcularTotal(),
@@ -499,7 +506,7 @@ botoes.forEach((btn) => {
 
 
 
-// Pagina comanda 11
+// Pagina comanda 12
 
 
 
@@ -1080,10 +1087,6 @@ useEffect(() => {
                                     })}
                                   </p>
                                 )}
-
-
-
-
                                 <button
                                   type="button"
                                   className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded w-full"
@@ -1182,8 +1185,6 @@ useEffect(() => {
     </div>
   )
   const renderComandas = () => {
-  
-
   return (
     <div>
       <div className="paginaComandas">
@@ -1207,28 +1208,25 @@ useEffect(() => {
           </button>
         </div>
     </div>
-      
       <div className="conteudo-geral">
-        {/* Lista de comandas */}
         <div className="conteudo-mesas">
           <div className="catalogo-grid-comandas">
             {comandaAbertas.map(comanda => (
               <div
                 key={comanda.id}
-                className={`mesa ${comandaSelecionada?.id === comanda.id ? 'border-2 border-yellow-400' : ''}`}
+                className={`comanda ${comandaSelecionada?.id === comanda.id ? 'comandasInfoATIVA' : 'comandasInfoINATIVA'}`}
                 onClick={() => setComandaSelecionada(comanda)}
               >
                 <h3>Mesa {comanda.numero_mesa}</h3>
                 <p>{comanda.nome_cliente || 'Sem nome'}</p>
                 <p>{new Date(comanda.aberta_em).toLocaleTimeString()}</p>
                 <span className={`status ${comanda.status ? 'aberta' : 'fechada'}`}>
-                  {comanda.status ? 'Aberta' : 'Fechada'}
+                  {comanda.status ? 'Aberta' : 'Fechada'} - Detalhes 
                 </span>
               </div>
             ))}
           </div>
         </div>
-
         {/* Painel detalhado da comanda selecionada */}
         {comandaSelecionada && (
           <div className="dinamico-comanda">
@@ -1274,7 +1272,10 @@ useEffect(() => {
               
               <div className="flex justify-between mb-1">
                 <span>Taxa de serviço (10%):</span>
-                <span>R$ {calcularTaxa().toFixed(2)}</span>
+                <span>
+                  R$ {taxaServicoComanda !== true ? formatarValorTaxa(calcularTaxa()) : '--'}
+                </span>
+
               </div>
               
               <div className="flex justify-between font-bold text-lg mt-2">
@@ -1303,14 +1304,32 @@ useEffect(() => {
             <div className="mb-4">
               <label className="block mb-2">Valor Recebido:</label>
               <input
-                type="number"
-                value={valorPagoComanda}
-                onChange={(e) => setValorPagoComanda(Number(e.target.value))}
+                type="text"
+                value={valorPagoComanda.toLocaleString('pt-BR', {
+                  style: 'currency',
+                  currency: 'BRL'
+                })}
+                onChange={(e) => {
+                  const apenasNumeros = e.target.value.replace(/\D/g, '');
+                  const valor = Number(apenasNumeros) / 100;
+                  setValorPagoComanda(valor);
+                }}
                 className="w-full p-2 rounded bg-gray-700"
-                step="0.01"
-                min="0"
               />
             </div>
+              <div className="flex items-center justify-between">
+  <label className="flex items-center space-x-2">
+    <input
+      type="checkbox"
+      checked={taxaServico} // Aqui deve ser o estado booleano real
+      onChange={() => setTaxaServico(!taxaServico)}
+      className="h-4 w-4 text-blue-600 rounded"
+    />
+    <span>
+      Taxa de serviço ({(taxaPercentual * 100).toFixed(0)}%)
+    </span>
+  </label>
+</div>
 
             {/* Resumo de pagamento */}
             <div className="border-t pt-4 mb-6">
@@ -1329,13 +1348,8 @@ useEffect(() => {
             {/* Ações */}
             <div className="flex space-x-2">
               <button
-                onClick={() => setComandaSelecionada(null)}
-                className="bg-gray-500 hover:bg-gray-600 px-4 py-2 rounded flex-1"
-              >
-                Voltar
-              </button>
-              <button
                 onClick={finalizarComanda}
+                disabled={calcularRestante() !== 0 || !formaPagamentoComanda}
                 className={`bg-green-500 hover:bg-green-600 px-4 py-2 rounded flex-1 ${
                   calcularRestante() > 0 || !formaPagamentoComanda ? 'opacity-50 cursor-not-allowed' : ''
                 }`}

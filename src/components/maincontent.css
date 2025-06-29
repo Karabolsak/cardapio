@@ -250,8 +250,7 @@
   gap: 15px;
 }.titulo-comanda h2 {
   margin: 0;
-}
-.catalogo-grid-comandas {
+}.catalogo-grid-comandas {
   flex: 2;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
@@ -300,7 +299,6 @@
     background-position: 100% 50%;
   }
 }
-
 .comandasInfoATIVA {
   border-style: var(--tw-border-style);
   border-width: 2px;
@@ -327,17 +325,23 @@
 }
 .comandaInfoENCERRADA {
   box-shadow:
-    0 0 1px 1px rgba(250, 131, 131, 0.8);
+    0 0 1px 1px rgba(255, 0, 0, 0.8);
 }
 .aberta {
   color: #00E676;
 }
 .fechada {
-  color: red
+  color: rgba(255, 0, 0, 0.8);
 }
 .taxaComanda {
   display: flex;
   justify-content: space-between;
   margin-bottom: 0.25rem;
   gap: 10px;
+}
+.exclusaoComanda {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 15px;
 }

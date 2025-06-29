@@ -69,6 +69,7 @@ type Comandas = {
   mais_pagamentos: boolean;
   numero_mesa: number;
   quantidade_pagantes: number;
+  valor_comanda: number;
 }
 
   const [produtos, setProdutos] = useState<Produto[]>([])
@@ -108,6 +109,9 @@ type Comandas = {
   const [formaPagamentoComanda, setFormaPagamentoComanda] = useState<FormaPagamento | ''>('');
   const [valorPagoComanda, setValorPagoComanda] = useState(0);
   const [statusAtivo, setStatusAtivo] = useState<"abertas" | "encerradas">("abertas");
+  const [excluirComanda, setExcluirComanda] = useState('');
+
+
 
   
   const abrirMesa = async (mesa: Mesa) => {
@@ -481,15 +485,24 @@ type Comandas = {
         .eq('id', comandaSelecionada.id);
 
       if (error) throw error;
+      
+      const { error: updateItensError } = await supabase
+        .from("itens_comanda")
+        .update({ 
+        status: "encerrado", 
+        encerrado_em: new Date().toISOString() 
+        })
+        .eq("id_comanda", comandaSelecionada.id);
 
-      // Libera a mesa associada
+      if (updateItensError) {
+        console.warn("Itens não foram encerrados corretamente:", updateItensError);
+        
+      }
       await supabase
         .from('mesas')
         .update({ ativa: false})
         .eq('id', comandaSelecionada.id_mesa);
-        
 
-      // Atualiza o estado
       setComandaAbertas(comandaAbertas.filter(c => c.id !== comandaSelecionada.id));
       setComandaSelecionada(null);
       alert('Comanda encerrada com sucesso!');
@@ -500,18 +513,48 @@ type Comandas = {
     }
 };
 const botoes = document.querySelectorAll(".botao-status");
-
 botoes.forEach((btn) => {
   btn.addEventListener("click", () => {
     botoes.forEach((b) => b.classList.remove("ativo"));
     btn.classList.add("ativo");
   });
 });
+const deletarComanda = async () => {
+  if (!comandaSelecionada) return;
+
+  try {
+    let { error: errorItens } = await supabase
+      .from('itens_comanda')
+      .delete()
+      .eq('id_comanda', comandaSelecionada.id);
+
+    if (errorItens) throw errorItens;
+
+    let { error: errorComanda } = await supabase
+      .from('comandas')
+      .delete()
+      .eq('id', comandaSelecionada.id);
+
+    if (errorComanda) throw errorComanda;
+
+    alert('Comanda e itens deletados com sucesso!');
+    
+    if (statusAtivo === 'abertas') {
+      buscarComandasAbertas();
+    } 
+
+    setComandaSelecionada(null);
+    setExcluirComanda('');
+  } catch (error) {
+    console.error('Erro ao deletar comanda:', error);
+    alert('Falha ao deletar a comanda. Tente novamente.');
+  }
+};
 
 
 
 
-// Pagina comanda 13
+// Pagina comanda 14
 
 
 
@@ -628,9 +671,21 @@ useEffect(() => {
 }, []);
 useEffect(() => {
   if (dividirConta && quantidade > 1) {
-    setFormasPagamentosExtras(
-      Array(quantidade - 1).fill({ forma: 'dinheiro', valor: 0 })
-    );
+    setFormasPagamentosExtras((prev) => {
+      const novos = [...prev];
+
+      // Adiciona objetos extras se quantidade aumentou
+      while (novos.length < quantidade - 1) {
+        novos.push({ forma: 'dinheiro', valor: 0 });
+      }
+
+      // Remove excessos se quantidade diminuiu
+      while (novos.length > quantidade - 1) {
+        novos.pop();
+      }
+
+      return novos;
+    });
   } else {
     setFormasPagamentosExtras([]);
   }
@@ -674,7 +729,6 @@ useEffect(() => {
 }, [comandaSelecionada]);
   
  
-
 
 
   const renderProdutos = () => (
@@ -1212,246 +1266,342 @@ useEffect(() => {
             Encerradas
           </button>
         </div>
-    </div>
+      </div>
       <div className="conteudo-geral">
         <div className="conteudo-mesas">
-          <div className="catalogo-grid-comandas">
-            {comandaAbertas.map(comanda => (
-              <div
-                key={comanda.id}
-                className={`comanda ${comandaSelecionada?.id === comanda.id ? 'comandasInfoATIVA' : 'comandasInfoINATIVA'}`}
-                onClick={() => setComandaSelecionada(comanda)}
-              >
-                <h3>Mesa {comanda.numero_mesa}</h3>
-                <p>{comanda.nome_cliente || 'Sem nome'}</p>
-                <p>{new Date(comanda.aberta_em).toLocaleTimeString()}</p>
-                <span className={`status ${comanda.status ? 'aberta' : 'fechada'}`}>
-                  {comanda.status ? 'Aberta' : 'Fechada'} - Detalhes 
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-        {/* Painel detalhado da comanda selecionada */}
-        {comandaSelecionada && (
-          <div className="dinamico-comanda">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold">
-                Mesa {comandaSelecionada.numero_mesa} - {comandaSelecionada.nome_cliente || 'Sem nome'}
-              </h2>
-              <button
-                onClick={() => setComandaSelecionada(null)}
-                className="text-gray-400 hover:text-white text-xl"
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Itens da comanda */}
-            <div className="mb-6">
-              <p className="font-semibold mb-2">Itens da comanda:</p>
-              {itensComandaSelecionada.length === 0 ? (
-                <p className="text-gray-400">Nenhum item adicionado</p>
-              ) : (
-                <ul className="mb-4 space-y-2">
-                  {itensComandaSelecionada.map(item => (
-                    <li key={item.id} className="flex justify-between">
-                      <span>
-                        {item.quantidade}x {item.nome_produto}
-                      </span>
-                      <span>
-                        R$ {(item.quantidade * item.preco_unitario).toFixed(2)}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-
-            {/* Resumo financeiro */}
-            <div className="border-t pt-4 mb-6">
-              <div className="flex items-center justify-between">
-              <label className="flex items-center space-x-2" style={{ marginBottom: 10, marginTop: 10 }}>
-                <input
-                  type="checkbox"
-                  checked={taxaServico} // Aqui deve ser o estado booleano real
-                  onChange={() => setTaxaServico(!taxaServico)}
-                  
-                  className="h-4 w-4 text-blue-600 rounded"
-                />
-                <span>
-                  Taxa de serviço ({(taxaPercentual * 100).toFixed(0)}%)
-                </span>
-              </label>
-            </div>
-              <div className="flex justify-between mb-1">
-                <span>Subtotal:</span>
-                <span>R$ {calcularSubtotal().toFixed(2)}</span>
-              </div>
-              <div className="taxaComanda">
-                <span>Taxa:</span>
-                <span>
-                  {taxaServicoComanda !== true ? formatarValorTaxa(calcularTaxa()) : '--'}
-                </span>
-              </div>
-              <div className="flex justify-between font-bold text-lg mt-2">
-                <span>Total:</span>
-                <span>R$ {calcularTotal().toFixed(2)}</span>
-              </div>
-            </div>
-
-            {/* Forma de pagamento */}
-            <div className="mb-4">
-              <label className="block mb-2">Forma de Pagamento:</label>
-              <select
-                value={formaPagamentoComanda}
-                onChange={(e) => setFormaPagamentoComanda(e.target.value as FormaPagamento)}
-                className="w-full p-2 rounded bg-gray-700"
-              >
-                <option value="">Selecione</option>
-                <option value="dinheiro">Dinheiro</option>
-                <option value="pix">PIX</option>
-                <option value="cartao_debito">Cartão de Débito</option>
-                <option value="cartao_credito">Cartão de Crédito</option>
-              </select>
-              {['pix', 'dinheiro', 'cartao_debito', 'cartao_credito'].includes(formaPagamentoComanda) && (
-                <div className="mb-4">
-                  <label className="block mb-2">Valor Recebido:</label>
-                  <input
-                    type="text"
-                    value={valorPagoComanda.toLocaleString('pt-BR', {
-                      style: 'currency',
-                      currency: 'BRL'
-                    })}
-                    onChange={(e) => {
-                      const apenasNumeros = e.target.value.replace(/\D/g, '');
-                      const valor = Number(apenasNumeros) / 100;
-                      setValorPagoComanda(valor);
-                    }}
-                    className="w-full p-2 rounded bg-gray-700"
-                  />
+            {statusAtivo === "abertas" &&  (
+              <div className="catalogo-grid-comandas">
+                  {comandaAbertas.map(comanda => (
+                <div
+                  key={comanda.id}
+                  className={`comanda ${comandaSelecionada?.id === comanda.id ? 'comandasInfoATIVA' : 'comandasInfoINATIVA'}`}
+                  onClick={() => setComandaSelecionada(comanda)}
+                >
+                  <h3>Mesa {comanda.numero_mesa}</h3>
+                  <p>{comanda.nome_cliente || 'Sem nome'}</p>
+                  <p>{new Date(comanda.aberta_em).toLocaleString('pt-BR', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                  </p>
+                  <span className={`status ${comanda.status ? 'aberta' : ''}`}>
+                    {comanda.status ? 'Aberta' : ''} - Detalhes 
+                  </span>
                 </div>
-              )}
-            </div>
-              <div className="dividir-conta">
-                <label className="text-white mr-2">Dividir conta?</label>
-                <input 
-                  type="checkbox" 
-                  checked={dividirConta}
-                  onChange={() => setDividirConta(!dividirConta)}
-                  className="h-4 w-4 text-blue-600 rounded"
-                />
-                {dividirConta && (
-                  <div className="botton-dividir">
-                    <button
-                      onClick={() => setQuantidade((prev) => Math.max(1, prev - 1))}
-                      className="text-white text-lg px-2 hover:text-red-400"
-                      style={{ marginRight: 15 }}
-                    >
-                      −
-                    </button>
-                    <span 
-                      className="text-white font-semibold"
-                      style={{ marginRight: 15 }}
-                    >
-                      {quantidade}
-                    </span>
-                    <button
-                      onClick={() => setQuantidade((prev) => prev + 1)}
-                      className="text-white text-lg px-2 hover:text-green-400"
-                    >
-                      +
-                    </button>
+              ))}
+              </div>
+            )}
+            {statusAtivo === "encerradas" &&  (
+              <div className="catalogo-grid-comandas">
+                  {comandaAbertas.map(comanda => (
+                <div
+                  key={comanda.id}
+                  className={`comanda ${comandaSelecionada?.id === comanda.id ? 'comandasInfoATIVA' : 'comandaInfoENCERRADA'}`}
+                  onClick={() => setComandaSelecionada(comanda)}
+                >
+                  <h3>Mesa {comanda.numero_mesa}</h3>
+                  <p>{comanda.nome_cliente || 'Sem nome'}</p>
+                  <p>{new Date(comanda.aberta_em).toLocaleString('pt-BR', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                  </p>
+                  <span className={`status ${comanda.status ? '' : 'fechada'}`}>
+                    {comanda.status ? '' : 'Fechada'} - Detalhes 
+                  </span>
+                </div>
+              ))}
+              </div>
+            )}
+        </div>
+        {comandaSelecionada && statusAtivo === "abertas" && (
+            <div className="dinamico-comanda">
+              <div className="flex justify-between items-center mb-4 gap-[10px]">
+                <h2 className="text-2xl font-bold">
+                  Mesa {comandaSelecionada.numero_mesa} - {comandaSelecionada.nome_cliente || 'Sem nome'}
+                </h2>
+                <button
+                  onClick={() => setComandaSelecionada(null)}
+                  className="text-gray-400 hover:text-white text-xl"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="mb-6">
+                <p className="font-semibold mb-2">Itens da comanda:</p>
+                {itensComandaSelecionada.length === 0 ? (
+                  <p className="text-gray-400">Nenhum item adicionado</p>
+                ) : (
+                  <ul className="mb-4 space-y-2">
+                    {itensComandaSelecionada.map(item => (
+                      <li key={item.id} className="flex justify-between">
+                        <span>
+                          {item.quantidade}x {item.nome_produto}
+                        </span>
+                        <span>
+                          R$ {(item.quantidade * item.preco_unitario).toFixed(2)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <div className="border-t pt-4 mb-6">
+                <div className="flex items-center justify-between">
+                <label className="flex items-center space-x-2" style={{ marginBottom: 10, marginTop: 10 }}>
+                  <input
+                    type="checkbox"
+                    checked={taxaServico} 
+                    onChange={() => setTaxaServico(!taxaServico)}
+                    className="h-4 w-4 text-blue-600 rounded"
+                  />
+                  <span>
+                    Taxa de serviço ({(taxaPercentual * 100).toFixed(0)}%)
+                  </span>
+                </label>
+              </div>
+                <div className="flex justify-between mb-1">
+                  <span>Subtotal:</span>
+                  <span>R$ {calcularSubtotal().toFixed(2)}</span>
+                </div>
+                <div className="taxaComanda">
+                  <span>Taxa:</span>
+                  <span>
+                    {taxaServicoComanda !== true ? formatarValorTaxa(calcularTaxa()) : '--'}
+                  </span>
+                </div>
+                <div className="flex justify-between font-bold text-lg mt-2">
+                  <span>Total:</span>
+                  <span>R$ {calcularTotal().toFixed(2)}</span>
+                </div>
+              </div>
+              <div className="mb-4">
+                <label className="block mb-2">Forma de Pagamento:</label>
+                <select
+                  value={formaPagamentoComanda}
+                  onChange={(e) => setFormaPagamentoComanda(e.target.value as FormaPagamento)}
+                  className="w-full p-2 rounded bg-gray-700"
+                >
+                  <option value="">Selecione</option>
+                  <option value="dinheiro">Dinheiro</option>
+                  <option value="pix">PIX</option>
+                  <option value="cartao_debito">Cartão de Débito</option>
+                  <option value="cartao_credito">Cartão de Crédito</option>
+                </select>
+                {['pix', 'dinheiro', 'cartao_debito', 'cartao_credito'].includes(formaPagamentoComanda) && (
+                  <div className="mb-4">
+                    <label className="block mb-2">Valor Recebido:</label>
+                    <input
+                      type="text"
+                      value={valorPagoComanda.toLocaleString('pt-BR', {
+                        style: 'currency',
+                        currency: 'BRL'
+                      })}
+                      onChange={(e) => {
+                        const apenasNumeros = e.target.value.replace(/\D/g, '');
+                        const valor = Number(apenasNumeros) / 100;
+                        setValorPagoComanda(valor);
+                      }}
+                      className="w-full p-2 rounded bg-gray-700"
+                    />
                   </div>
                 )}
+              </div>
+                <div className="dividir-conta">
+                  <label className="text-white mr-2">Dividir conta?</label>
+                  <input 
+                    type="checkbox" 
+                    checked={dividirConta}
+                    onChange={() => setDividirConta(!dividirConta)}
+                    className="h-4 w-4 text-blue-600 rounded"
+                  />
+                  {dividirConta && (
+                    <div className="botton-dividir">
+                      <button
+                        onClick={() => setQuantidade((prev) => Math.max(1, prev - 1))}
+                        className="text-white text-lg px-2 hover:text-red-400"
+                        style={{ marginRight: 15 }}
+                      >
+                        −
+                      </button>
+                      <span 
+                        className="text-white font-semibold"
+                        style={{ marginRight: 15 }}
+                      >
+                        {quantidade}
+                      </span>
+                      <button
+                        onClick={() => setQuantidade((prev) => prev + 1)}
+                        className="text-white text-lg px-2 hover:text-green-400"
+                      >
+                        +
+                      </button>
+                    </div>
+                  )}
+                </div>
+                {dividirConta && quantidade > 1 && (
+                  <div className="mt-4 space-y-4">
+                    {formasPagamentosExtras.map((pagamento, index) => (
+                      <div key={index} className="pagamentos-extras">
+                        <label className="block text-white mb-2">
+                          Pagamento adicional {index + 2}
+                        </label>
+                        <select
+                          value={pagamento.forma}
+                          onChange={(e) => {
+                            const novasFormas = [...formasPagamentosExtras];
+                              novasFormas[index] = {
+                              ...novasFormas[index],
+                              forma: e.target.value as FormaPagamento,
+                            };
+                            setFormasPagamentosExtras(novasFormas);
+                          }}
+                          className="w-full mb-2 px-3 py-2 rounded bg-gray-800 text-white border border-gray-600"
+                          >
+                          {Object.entries(formasPagamentoLabels).map(([value, label]) => (
+                          <option key={value} value={value}>
+                            {label}
+                          </option>
+                          ))}
+                        </select>
+                        <label>Insira o valor recebido: </label>
+                        <input
+                          type="text"
+                          value={pagamento.valor.toLocaleString('pt-BR', {
+                            style: 'currency',
+                            currency: 'BRL'
+                            })}
+                          onChange={(e) => {
+                            const novasFormas = [...formasPagamentosExtras];
+                            const valorBruto = e.target.value.replace(/\D/g, '');
+                            const valor = Number((parseFloat(valorBruto) / 100).toFixed(2)); // 👈 corrige o ponto flutuante
+                            novasFormas[index] = {
+                            ...novasFormas[index],
+                              valor: valor,
+                            };
+                            setFormasPagamentosExtras(novasFormas);
+                          }}
+                          className="w-full px-3 py-2 rounded bg-gray-800 text-white border border-gray-600"
+                          placeholder="R$ 0,00"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              <div className="border-t pt-4 mb-6">
+                <div className="flex justify-between">
+                  <span>Valor Pago:</span>
+                  <span>R$ {valorPagoComanda.toFixed(2)}</span>
+                </div>
+                <div className={`flex justify-between ${
+                  calcularRestante() > 0 ? 'text-yellow-400' : 'text-green-400'
+                }`}>
+                  <span>{calcularRestante() > 0 ? 'Restante:' : 'Troco:'}</span>
+                  <span>R$ {Math.abs(calcularRestante()).toFixed(2)}</span>
+                </div>
+              </div>
+              <div className="flex space-x-2">
+                <button
+                  onClick={finalizarComanda}
+                  disabled={calcularRestante() !== 0 || !formaPagamentoComanda}
+                  className={`bg-green-500 hover:bg-green-600 px-4 py-2 rounded flex-1 ${
+                    calcularRestante() > 0 || !formaPagamentoComanda ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
+                >
+                  Finalizar Comanda
+                </button>
+              </div>
+            </div>
+          )}
+        {comandaSelecionada && statusAtivo === "encerradas" && (
+            <div className="dinamico-comanda">
+              <div className="flex justify-between items-center mb-4 gap-[10px]">
+                <h2 className="text-2xl font-bold">
+                  Mesa {comandaSelecionada.numero_mesa} - {comandaSelecionada.nome_cliente || 'Sem nome'}
+                </h2>
+                <button
+                  onClick={() => setComandaSelecionada(null)}
+                  className="text-gray-400 hover:text-white text-xl"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="mb-6">
+                <p className="font-semibold mb-2">Itens da comanda:</p>
+                {itensComandaSelecionada.length === 0 ? (
+                  <p className="text-gray-400">Nenhum item adicionado</p>
+                ) : (
+                  <ul className="mb-4 space-y-2">
+                    {itensComandaSelecionada.map(item => (
+                      <li key={item.id} className="flex justify-between">
+                        <span>
+                          {item.quantidade}x {item.nome_produto}
+                        </span>
+                        <span>
+                          R$ {(item.quantidade * item.preco_unitario).toFixed(2)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <div className="border-t pt-4 mb-6">
+                <div className="flex justify-between mb-1">
+                  <span>Subtotal:</span>
+                  <span>R$ {calcularSubtotal().toFixed(2)}</span>
+                </div>
+                <div className="taxaComanda">
+                  <span>Taxa:</span>
+                  <span>
+                     {comandaSelecionada?.taxa_status ? comandaSelecionada.taxa_servico : '--'}
+                  </span>
+                </div>
+                <div className="flex justify-between font-bold text-lg mt-2">
+                  <span>Total:</span>
+                  <span>R$ {comandaSelecionada.valor_comanda}</span>
+                </div>
+              </div>
+              <div className="border-t pt-4 mb-6">
+                <div className="flex justify-between my-[10px] border border-dashed border-white border-[1px] p-[5px] rounded-[10px]">
+                  <span>Valor Pago:</span>
+                  <span>R$ {comandaSelecionada.valor_comanda}</span>
+                </div>
                 
               </div>
-              {dividirConta && quantidade > 1 && (
-                                  <div className="mt-4 space-y-4">
-                                    {formasPagamentosExtras.map((pagamento, index) => (
-                                      <div key={index} className="pagamentos-extras">
-                                        <label className="block text-white mb-2">
-                                          Pagamento adicional {index + 2}
-                                        </label>
 
-                                        <select
-                                          value={pagamento.forma}
-                                          onChange={(e) => {
-                                            const novasFormas = [...formasPagamentosExtras];
-                                            novasFormas[index] = {
-                                              ...novasFormas[index],
-                                              forma: e.target.value as FormaPagamento,
-                                            };
-                                            setFormasPagamentosExtras(novasFormas);
-                                          }}
-                                          className="w-full mb-2 px-3 py-2 rounded bg-gray-800 text-white border border-gray-600"
-                                        >
-                                          {Object.entries(formasPagamentoLabels).map(([value, label]) => (
-                                            <option key={value} value={value}>
-                                              {label}
-                                            </option>
-                                          ))}
-                                        </select>
-                                        <label>Insira o valor recebido: </label>
-                                        <input
-                                          type="text"
-                                          value={pagamento.valor.toLocaleString('pt-BR', {
-                                            style: 'currency',
-                                            currency: 'BRL'
-                                          })}
-                                          onChange={(e) => {
-                                            const novasFormas = [...formasPagamentosExtras];
-                                            const valorBruto = e.target.value.replace(/\D/g, '');
-                                            const valor = Number((parseFloat(valorBruto) / 100).toFixed(2)); // 👈 corrige o ponto flutuante
-                                            novasFormas[index] = {
-                                              ...novasFormas[index],
-                                              valor: valor,
-                                            };
-                                            setFormasPagamentosExtras(novasFormas);
-                                          }}
+              {/* Ações */}
+               
+               <div className="exclusaoComanda">
+                <label>Confirme a exclusão</label>
+                <input
+                  type="text"
+                  value={excluirComanda}
+                  placeholder="DELETAR COMANDA"
+                  onChange={(e) => setExcluirComanda(e.target.value)}
+                />
+               </div>
+                
 
-                                          className="w-full px-3 py-2 rounded bg-gray-800 text-white border border-gray-600"
-                                          placeholder="R$ 0,00"
-                                        />
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-
-
-              
-
-
-
-            {/* Resumo de pagamento */}
-            <div className="border-t pt-4 mb-6">
-              <div className="flex justify-between">
-                <span>Valor Pago:</span>
-                <span>R$ {valorPagoComanda.toFixed(2)}</span>
-              </div>
-              <div className={`flex justify-between ${
-                calcularRestante() > 0 ? 'text-yellow-400' : 'text-green-400'
-              }`}>
-                <span>{calcularRestante() > 0 ? 'Restante:' : 'Troco:'}</span>
-                <span>R$ {Math.abs(calcularRestante()).toFixed(2)}</span>
+              <div className="flex space-x-2">
+                <button
+                  disabled={excluirComanda !== "DELETAR COMANDA"}
+                  onClick={deletarComanda}
+                  className={`bg-red-600 hover:bg-red-700 px-4 py-2 rounded flex-1 ${
+                    excluirComanda !== "DELETAR COMANDA" ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
+                >
+                  Deletar comanda
+                </button>
               </div>
             </div>
-
-            {/* Ações */}
-            <div className="flex space-x-2">
-              <button
-                onClick={finalizarComanda}
-                disabled={calcularRestante() !== 0 || !formaPagamentoComanda}
-                className={`bg-green-500 hover:bg-green-600 px-4 py-2 rounded flex-1 ${
-                  calcularRestante() > 0 || !formaPagamentoComanda ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
-              >
-                Finalizar Comanda
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
+          )} 
+      </div>      
     </div>
   );
 };

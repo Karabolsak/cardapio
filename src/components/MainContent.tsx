@@ -248,7 +248,7 @@ type Comandas = {
       quantidade,
       preco_unitario: itemSelecionado.price,
       adicionado_em: new Date().toISOString(),
-      status: 'pendente',
+      status_entrega: false,
       nome_produto: itemSelecionado.nome,
       observacoes: observacoesPedidos,
     }]);

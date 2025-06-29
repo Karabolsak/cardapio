@@ -42,7 +42,7 @@ type ItemComanda = {
   preco_unitario: number;
   adicionado_em: string;
   id_colaborador: number;
-  status: boolean;
+  status_entrega: boolean;
   id_comanda: number;
   encerrado_em: string;
   tempo_entrega: string;
@@ -110,8 +110,8 @@ type Comandas = {
   const [valorPagoComanda, setValorPagoComanda] = useState(0);
   const [statusAtivo, setStatusAtivo] = useState<"abertas" | "encerradas">("abertas");
   const [excluirComanda, setExcluirComanda] = useState('');
-
-
+  const [statusEntregue, setStatusEntregue] = useState<"pendente" | "encerrado">("pendente");
+  const [itemEntregue, setItemEntregue] = useState<ItemComanda[]>([])
 
   
   const abrirMesa = async (mesa: Mesa) => {
@@ -213,7 +213,7 @@ type Comandas = {
   const { error: updateItensError } = await supabase
     .from("itens_comanda")
     .update({ 
-      status: "encerrado", 
+      status: true, 
       encerrado_em: new Date().toISOString() 
     })
     .eq("id_comanda", comanda.id);
@@ -489,7 +489,7 @@ type Comandas = {
       const { error: updateItensError } = await supabase
         .from("itens_comanda")
         .update({ 
-        status: "encerrado", 
+        status: true, 
         encerrado_em: new Date().toISOString() 
         })
         .eq("id_comanda", comandaSelecionada.id);
@@ -551,10 +551,30 @@ const deletarComanda = async () => {
   }
 };
 
+const buscarItens = async (statusEntregue: "encerrado" | "pendente") => {
+  try {
+    const statusBoolean = statusEntregue === "pendente"; // converte para true ou false
+
+    const { data, error } = await supabase
+      .from('itens_comanda')
+      .select('*')
+      .eq('status_entrega', statusBoolean)
+      .order('adicionado_em', { ascending: false });
+
+    if (error) {
+      console.error('Erro ao buscar comandas:', error.message);
+      return [];
+    }
+
+    return data ?? [];
+  } catch (e) {
+    console.error('Erro inesperado:', e);
+    return [];
+  }
+};
 
 
-
-// Pagina comanda 14
+// Pagina comanda 15
 
 
 
@@ -727,7 +747,16 @@ useEffect(() => {
 
     carregarItensComanda();
 }, [comandaSelecionada]);
-  
+useEffect(() => {
+  const carregar = async () => {
+    const itens = await buscarItens(statusEntregue);
+    setItemEntregue(itens);
+  };
+
+  carregar();
+}, [statusEntregue]); 
+
+
  
 
 
@@ -1606,8 +1635,58 @@ useEffect(() => {
   );
 };
   const renderCozinha = () => {
-    return (
-      <h1 className="titulo-mesas">Cozinha</h1>
+    return (      
+      <div>
+        <div className="paginaComandas">
+          <div>
+            <h1 className="titulo-mesas">Cozinha</h1>
+          </div>
+          <div className="buttonComandas">
+            <button
+              className={`botao-entregar ${statusEntregue === "pendente" ? "ativo" : ""}`}
+              data-status="abertas"
+              onClick={() => setStatusEntregue("pendente")}
+            >
+              Não entregue
+            </button>
+            <button
+              className={`botao-entregar ${statusEntregue === "encerrado" ? "ativo" : ""}`}
+              data-status="encerrado"
+              onClick={() => setStatusEntregue("encerrado")}
+            >
+              Finalizado
+            </button>
+           </div>
+        </div>
+        <div className="conteudo-mesas">
+          {statusEntregue === "pendente" && (
+            <div className="catalogo-grid-cozinha">
+              {itemEntregue.map((item) => (
+                <div
+                  key={item.id}
+                  className="item"
+                >
+                  <h3>{item.nome_produto}</h3>
+                  <p>{item.quantidade}</p>
+                </div>
+              ))}
+            </div>
+          )}
+          {statusEntregue === "encerrado" && (
+            <div className="catalogo-grid-cozinha">
+              {itemEntregue.map((item) => (
+                <div
+                  key={item.id}
+                >
+                  <h3>{item.nome_produto}</h3>
+                  <p>{item.quantidade} </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+      
     )
   }
   const renderBar = () => {

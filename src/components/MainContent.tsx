@@ -45,7 +45,9 @@ type ItemComanda = {
   status_entrega: boolean;
   id_comanda: number;
   encerrado_em: string;
-  tempo_entrega: string;
+  tempo_entrega: number;
+  observacoes: string;
+  comandas?:{ numero_mesa: number};
 };
 type FormaPagamento = 'dinheiro' | 'pix' | 'cartao_credito' | 'cartao_debito';
 type PagamentoExtra = {
@@ -112,7 +114,6 @@ type Comandas = {
   const [excluirComanda, setExcluirComanda] = useState('');
   const [statusEntregue, setStatusEntregue] = useState<"pendente" | "encerrado">("pendente");
   const [itemEntregue, setItemEntregue] = useState<ItemComanda[]>([])
-
   
   const abrirMesa = async (mesa: Mesa) => {
   const { data: comandaExistente } = await supabase
@@ -213,7 +214,7 @@ type Comandas = {
   const { error: updateItensError } = await supabase
     .from("itens_comanda")
     .update({ 
-      status: true, 
+      status_entrega: true, 
       encerrado_em: new Date().toISOString() 
     })
     .eq("id_comanda", comanda.id);
@@ -243,7 +244,7 @@ type Comandas = {
   const { error } = await supabase
     .from('itens_comanda')
     .insert([{
-      id_comanda: idComandaSelecionada, // Usa diretamente o ID da comanda selecionada
+      id_comanda: idComandaSelecionada, 
       id_produto: itemSelecionado.id,
       quantidade,
       preco_unitario: itemSelecionado.price,
@@ -550,14 +551,13 @@ const deletarComanda = async () => {
     alert('Falha ao deletar a comanda. Tente novamente.');
   }
 };
-
-const buscarItens = async (statusEntregue: "encerrado" | "pendente") => {
+  const buscarItens = async (statusEntregue: "pendente" | "encerrado") => {
   try {
-    const statusBoolean = statusEntregue === "pendente"; // converte para true ou false
+    const statusBoolean = statusEntregue === "encerrado"; // converte para true ou false
 
     const { data, error } = await supabase
       .from('itens_comanda')
-      .select('*')
+      .select('*, comandas(numero_mesa)')
       .eq('status_entrega', statusBoolean)
       .order('adicionado_em', { ascending: false });
 
@@ -572,6 +572,31 @@ const buscarItens = async (statusEntregue: "encerrado" | "pendente") => {
     return [];
   }
 };
+const finalizarEntrega = async (item: { id: number; adicionado_em: string }) => {
+  const agora = new Date();
+  const adicionado = new Date(item.adicionado_em);
+
+  // calcula diferença em minutos, mas não deixa negativa
+  const tempoMin = Math.max(0, Math.floor((agora.getTime() - adicionado.getTime()) / 60000));
+
+  const { error } = await supabase
+    .from('itens_comanda')
+    .update({
+      status_entrega: true,
+      encerrado_em: agora.toISOString(),
+      tempo_entrega: tempoMin,
+    })
+    .eq('id', item.id);
+
+  if (error) {
+    console.error('Erro ao finalizar entrega:', error.message);
+    return;
+  }
+  setMensagemSucesso("Item entregue!")
+  setItemEntregue((prev) => prev.filter((i) => i.id !== item.id));
+};
+
+
 
 
 // Pagina comanda 15
@@ -1666,8 +1691,17 @@ useEffect(() => {
                   key={item.id}
                   className="item"
                 >
-                  <h3>{item.nome_produto}</h3>
-                  <p>{item.quantidade}</p>
+                  <h3>Mesa: {item.comandas?.numero_mesa} </h3>
+                  <h4>{item.nome_produto}</h4>
+                  <p>Quantidade: {item.quantidade}</p>
+                  <p >Detalhes: {item.observacoes}</p>
+                  
+                  <button 
+                    className="buttonCozinha"
+                    onClick={() => finalizarEntrega(item)}
+                  >
+                    Confirmar entrega
+                  </button>
                 </div>
               ))}
             </div>

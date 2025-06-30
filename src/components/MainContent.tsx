@@ -574,25 +574,21 @@ botoes.forEach((btn) => {
 };
 const finalizarEntrega = async (item: { id: number; adicionado_em: string }) => {
   try {
-    // 1. Converter datas
     const adicionado = new Date(item.adicionado_em);
     const encerrado = new Date();
 
-    // 2. Cálculo preciso em minutos
     const diffMs = encerrado.getTime() - adicionado.getTime();
     const diffMinutos = diffMs / 60000;
     
-    // 3. Nova estratégia de arredondamento
     let tempoMin;
     if (diffMinutos < 1.5) {
-      tempoMin = 1; // Menos de 1m30s = 1 minuto
+      tempoMin = 1; 
     } else if (diffMinutos < 2.5) {
-      tempoMin = 2; // Entre 1m30s e 2m30s = 2 minutos
+      tempoMin = 2;
     } else {
-      tempoMin = Math.round(diffMinutos); // Acima de 2m30s = arredondamento normal
+      tempoMin = Math.round(diffMinutos); 
     }
 
-    // Debug detalhado
     console.group(`📊 Cálculo Tempo Entrega - Item #${item.id}`);
     console.log('🕒 Adicionado em:', adicionado.toISOString());
     console.log('🛑 Encerrado em:', encerrado.toISOString());
@@ -601,11 +597,10 @@ const finalizarEntrega = async (item: { id: number; adicionado_em: string }) => 
       minutosExatos: diffMinutos,
       minutosArredondados: tempoMin,
       regraAplicada: diffMinutos < 1.5 ? 'Menos de 1m30s' : 
-                    diffMinutos < 2.5 ? 'Entre 1m30s e 2m30s' : 'Arredondamento normal'
+      diffMinutos < 2.5 ? 'Entre 1m30s e 2m30s' : 'Arredondamento normal'
     });
     console.groupEnd();
 
-    // 4. Atualização no banco de dados
     const { error } = await supabase
       .from('itens_comanda')
       .update({
@@ -617,7 +612,6 @@ const finalizarEntrega = async (item: { id: number; adicionado_em: string }) => 
 
     if (error) throw error;
 
-    // 5. Feedback
     setMensagemSucesso(`✅ Item entregue em ${tempoMin} min`);
     setTimeout(() => setMensagemSucesso(''), 3000);
 
@@ -630,7 +624,6 @@ const finalizarEntrega = async (item: { id: number; adicionado_em: string }) => 
 
 const getBrazilianTime = () => {
   const now = new Date();
-  // Ajusta para UTC-3 (horário de Brasília)
   return new Date(now.getTime() - now.getTimezoneOffset() * 60000);
 };
 

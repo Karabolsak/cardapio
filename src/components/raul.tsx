@@ -1,5 +1,5 @@
 import "../App.css";
-import "./maincontent.css";
+import "./raul.css";
 import { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient"
 import shopping from "../../src/assets/add-shopping-car.svg"
@@ -42,12 +42,10 @@ type ItemComanda = {
   preco_unitario: number;
   adicionado_em: string;
   id_colaborador: number;
-  status_entrega: boolean;
+  status: boolean;
   id_comanda: number;
   encerrado_em: string;
-  tempo_entrega: number;
-  observacoes: string;
-  comandas?:{ numero_mesa: number};
+  tempo_entrega: string;
 };
 type FormaPagamento = 'dinheiro' | 'pix' | 'cartao_credito' | 'cartao_debito';
 type PagamentoExtra = {
@@ -71,7 +69,6 @@ type Comandas = {
   mais_pagamentos: boolean;
   numero_mesa: number;
   quantidade_pagantes: number;
-  valor_comanda: number;
 }
 
   const [produtos, setProdutos] = useState<Produto[]>([])
@@ -111,9 +108,7 @@ type Comandas = {
   const [formaPagamentoComanda, setFormaPagamentoComanda] = useState<FormaPagamento | ''>('');
   const [valorPagoComanda, setValorPagoComanda] = useState(0);
   const [statusAtivo, setStatusAtivo] = useState<"abertas" | "encerradas">("abertas");
-  const [excluirComanda, setExcluirComanda] = useState('');
-  const [statusEntregue, setStatusEntregue] = useState<"pendente" | "encerrado">("pendente");
-  const [itemEntregue, setItemEntregue] = useState<ItemComanda[]>([])
+
   
   const abrirMesa = async (mesa: Mesa) => {
   const { data: comandaExistente } = await supabase
@@ -214,7 +209,7 @@ type Comandas = {
   const { error: updateItensError } = await supabase
     .from("itens_comanda")
     .update({ 
-      status_entrega: true, 
+      status: "encerrado", 
       encerrado_em: new Date().toISOString() 
     })
     .eq("id_comanda", comanda.id);
@@ -244,12 +239,12 @@ type Comandas = {
   const { error } = await supabase
     .from('itens_comanda')
     .insert([{
-      id_comanda: idComandaSelecionada, 
+      id_comanda: idComandaSelecionada, // Usa diretamente o ID da comanda selecionada
       id_produto: itemSelecionado.id,
       quantidade,
       preco_unitario: itemSelecionado.price,
-      adicionado_em: getBrazilianTime().toISOString(),
-      status_entrega: false,
+      adicionado_em: new Date().toISOString(),
+      status: 'pendente',
       nome_produto: itemSelecionado.nome,
       observacoes: observacoesPedidos,
     }]);
@@ -486,24 +481,15 @@ type Comandas = {
         .eq('id', comandaSelecionada.id);
 
       if (error) throw error;
-      
-      const { error: updateItensError } = await supabase
-        .from("itens_comanda")
-        .update({ 
-        status: true, 
-        encerrado_em: new Date().toISOString() 
-        })
-        .eq("id_comanda", comandaSelecionada.id);
 
-      if (updateItensError) {
-        console.warn("Itens não foram encerrados corretamente:", updateItensError);
-        
-      }
+      // Libera a mesa associada
       await supabase
         .from('mesas')
         .update({ ativa: false})
         .eq('id', comandaSelecionada.id_mesa);
+        
 
+      // Atualiza o estado
       setComandaAbertas(comandaAbertas.filter(c => c.id !== comandaSelecionada.id));
       setComandaSelecionada(null);
       alert('Comanda encerrada com sucesso!');
@@ -514,133 +500,18 @@ type Comandas = {
     }
 };
 const botoes = document.querySelectorAll(".botao-status");
+
 botoes.forEach((btn) => {
   btn.addEventListener("click", () => {
     botoes.forEach((b) => b.classList.remove("ativo"));
     btn.classList.add("ativo");
   });
 });
-  const deletarComanda = async () => {
-  if (!comandaSelecionada) return;
-
-  try {
-    let { error: errorItens } = await supabase
-      .from('itens_comanda')
-      .delete()
-      .eq('id_comanda', comandaSelecionada.id);
-
-    if (errorItens) throw errorItens;
-
-    let { error: errorComanda } = await supabase
-      .from('comandas')
-      .delete()
-      .eq('id', comandaSelecionada.id);
-
-    if (errorComanda) throw errorComanda;
-
-    alert('Comanda e itens deletados com sucesso!');
-    
-    if (statusAtivo === 'abertas') {
-      buscarComandasAbertas();
-    } 
-
-    setComandaSelecionada(null);
-    setExcluirComanda('');
-  } catch (error) {
-    console.error('Erro ao deletar comanda:', error);
-    alert('Falha ao deletar a comanda. Tente novamente.');
-  }
-};
-  const buscarItens = async (statusEntregue: "pendente" | "encerrado") => {
-  try {
-    const statusBoolean = statusEntregue === "encerrado"; // converte para true ou false
-
-    const { data, error } = await supabase
-      .from('itens_comanda')
-      .select('*, comandas(numero_mesa)')
-      .eq('status_entrega', statusBoolean)
-      .order('adicionado_em', { ascending: false });
-
-    if (error) {
-      console.error('Erro ao buscar comandas:', error.message);
-      return [];
-    }
-
-    return data ?? [];
-  } catch (e) {
-    console.error('Erro inesperado:', e);
-    return [];
-  }
-};
-const finalizarEntrega = async (item: { id: number; adicionado_em: string }) => {
-  try {
-    // 1. Converter datas
-    const adicionado = new Date(item.adicionado_em);
-    const encerrado = new Date();
-
-    // 2. Cálculo preciso em minutos
-    const diffMs = encerrado.getTime() - adicionado.getTime();
-    const diffMinutos = diffMs / 60000;
-    
-    // 3. Nova estratégia de arredondamento
-    let tempoMin;
-    if (diffMinutos < 1.5) {
-      tempoMin = 1; // Menos de 1m30s = 1 minuto
-    } else if (diffMinutos < 2.5) {
-      tempoMin = 2; // Entre 1m30s e 2m30s = 2 minutos
-    } else {
-      tempoMin = Math.round(diffMinutos); // Acima de 2m30s = arredondamento normal
-    }
-
-    // Debug detalhado
-    console.group(`📊 Cálculo Tempo Entrega - Item #${item.id}`);
-    console.log('🕒 Adicionado em:', adicionado.toISOString());
-    console.log('🛑 Encerrado em:', encerrado.toISOString());
-    console.log('⏱️ Diferença:', {
-      milissegundos: diffMs,
-      minutosExatos: diffMinutos,
-      minutosArredondados: tempoMin,
-      regraAplicada: diffMinutos < 1.5 ? 'Menos de 1m30s' : 
-                    diffMinutos < 2.5 ? 'Entre 1m30s e 2m30s' : 'Arredondamento normal'
-    });
-    console.groupEnd();
-
-    // 4. Atualização no banco de dados
-    const { error } = await supabase
-      .from('itens_comanda')
-      .update({
-        status_entrega: true,
-        encerrado_em: encerrado.toISOString(),
-        tempo_entrega: tempoMin
-      })
-      .eq('id', item.id);
-
-    if (error) throw error;
-
-    // 5. Feedback
-    setMensagemSucesso(`✅ Item entregue em ${tempoMin} min`);
-    setTimeout(() => setMensagemSucesso(''), 3000);
-
-    setItemEntregue(prev => prev.filter(i => i.id !== item.id));
-
-  } catch (error) {
-    console.error('❌ Erro ao finalizar entrega:', error);
-  }
-};
-
-const getBrazilianTime = () => {
-  const now = new Date();
-  // Ajusta para UTC-3 (horário de Brasília)
-  return new Date(now.getTime() - now.getTimezoneOffset() * 60000);
-};
 
 
 
 
-
-
-
-// Pagina comanda 15
+// Pagina comanda 13
 
 
 
@@ -757,21 +628,9 @@ useEffect(() => {
 }, []);
 useEffect(() => {
   if (dividirConta && quantidade > 1) {
-    setFormasPagamentosExtras((prev) => {
-      const novos = [...prev];
-
-      // Adiciona objetos extras se quantidade aumentou
-      while (novos.length < quantidade - 1) {
-        novos.push({ forma: 'dinheiro', valor: 0 });
-      }
-
-      // Remove excessos se quantidade diminuiu
-      while (novos.length > quantidade - 1) {
-        novos.pop();
-      }
-
-      return novos;
-    });
+    setFormasPagamentosExtras(
+      Array(quantidade - 1).fill({ forma: 'dinheiro', valor: 0 })
+    );
   } else {
     setFormasPagamentosExtras([]);
   }
@@ -813,17 +672,9 @@ useEffect(() => {
 
     carregarItensComanda();
 }, [comandaSelecionada]);
-useEffect(() => {
-  const carregar = async () => {
-    const itens = await buscarItens(statusEntregue);
-    setItemEntregue(itens);
-  };
-
-  carregar();
-}, [statusEntregue]); 
-
-
+  
  
+
 
 
   const renderProdutos = () => (
@@ -1361,407 +1212,252 @@ useEffect(() => {
             Encerradas
           </button>
         </div>
-      </div>
+    </div>
       <div className="conteudo-geral">
         <div className="conteudo-mesas">
-            {statusAtivo === "abertas" &&  (
-              <div className="catalogo-grid-comandas">
-                  {comandaAbertas.map(comanda => (
-                <div
-                  key={comanda.id}
-                  className={`comanda ${comandaSelecionada?.id === comanda.id ? 'comandasInfoATIVA' : 'comandasInfoINATIVA'}`}
-                  onClick={() => setComandaSelecionada(comanda)}
-                >
-                  <h3>Mesa {comanda.numero_mesa}</h3>
-                  <p>{comanda.nome_cliente || 'Sem nome'}</p>
-                  <p>{new Date(comanda.aberta_em).toLocaleString('pt-BR', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                  </p>
-                  <span className={`status ${comanda.status ? 'aberta' : ''}`}>
-                    {comanda.status ? 'Aberta' : ''} - Detalhes 
-                  </span>
-                </div>
-              ))}
+          <div className="catalogo-grid-comandas">
+            {comandaAbertas.map(comanda => (
+              <div
+                key={comanda.id}
+                className={`comanda ${comandaSelecionada?.id === comanda.id ? 'comandasInfoATIVA' : 'comandasInfoINATIVA'}`}
+                onClick={() => setComandaSelecionada(comanda)}
+              >
+                <h3>Mesa {comanda.numero_mesa}</h3>
+                <p>{comanda.nome_cliente || 'Sem nome'}</p>
+                <p>{new Date(comanda.aberta_em).toLocaleTimeString()}</p>
+                <span className={`status ${comanda.status ? 'aberta' : 'fechada'}`}>
+                  {comanda.status ? 'Aberta' : 'Fechada'} - Detalhes 
+                </span>
               </div>
-            )}
-            {statusAtivo === "encerradas" &&  (
-              <div className="catalogo-grid-comandas">
-                  {comandaAbertas.map(comanda => (
-                <div
-                  key={comanda.id}
-                  className={`comanda ${comandaSelecionada?.id === comanda.id ? 'comandasInfoATIVA' : 'comandaInfoENCERRADA'}`}
-                  onClick={() => setComandaSelecionada(comanda)}
-                >
-                  <h3>Mesa {comanda.numero_mesa}</h3>
-                  <p>{comanda.nome_cliente || 'Sem nome'}</p>
-                  <p>{new Date(comanda.aberta_em).toLocaleString('pt-BR', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                  </p>
-                  <span className={`status ${comanda.status ? '' : 'fechada'}`}>
-                    {comanda.status ? '' : 'Fechada'} - Detalhes 
-                  </span>
-                </div>
-              ))}
-              </div>
-            )}
+            ))}
+          </div>
         </div>
-        {comandaSelecionada && statusAtivo === "abertas" && (
-            <div className="dinamico-comanda">
-              <div className="flex justify-between items-center mb-4 gap-[10px]">
-                <h2 className="text-2xl font-bold">
-                  Mesa {comandaSelecionada.numero_mesa} - {comandaSelecionada.nome_cliente || 'Sem nome'}
-                </h2>
-                <button
-                  onClick={() => setComandaSelecionada(null)}
-                  className="text-gray-400 hover:text-white text-xl"
-                >
-                  ✕
-                </button>
-              </div>
-              <div className="mb-6">
-                <p className="font-semibold mb-2">Itens da comanda:</p>
-                {itensComandaSelecionada.length === 0 ? (
-                  <p className="text-gray-400">Nenhum item adicionado</p>
-                ) : (
-                  <ul className="mb-4 space-y-2">
-                    {itensComandaSelecionada.map(item => (
-                      <li key={item.id} className="flex justify-between">
-                        <span>
-                          {item.quantidade}x {item.nome_produto}
-                        </span>
-                        <span>
-                          R$ {(item.quantidade * item.preco_unitario).toFixed(2)}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-              <div className="border-t pt-4 mb-6">
-                <div className="flex items-center justify-between">
-                <label className="flex items-center space-x-2" style={{ marginBottom: 10, marginTop: 10 }}>
-                  <input
-                    type="checkbox"
-                    checked={taxaServico} 
-                    onChange={() => setTaxaServico(!taxaServico)}
-                    className="h-4 w-4 text-blue-600 rounded"
-                  />
-                  <span>
-                    Taxa de serviço ({(taxaPercentual * 100).toFixed(0)}%)
-                  </span>
-                </label>
-              </div>
-                <div className="flex justify-between mb-1">
-                  <span>Subtotal:</span>
-                  <span>R$ {calcularSubtotal().toFixed(2)}</span>
-                </div>
-                <div className="taxaComanda">
-                  <span>Taxa:</span>
-                  <span>
-                    {taxaServicoComanda !== true ? formatarValorTaxa(calcularTaxa()) : '--'}
-                  </span>
-                </div>
-                <div className="flex justify-between font-bold text-lg mt-2">
-                  <span>Total:</span>
-                  <span>R$ {calcularTotal().toFixed(2)}</span>
-                </div>
-              </div>
-              <div className="mb-4">
-                <label className="block mb-2">Forma de Pagamento:</label>
-                <select
-                  value={formaPagamentoComanda}
-                  onChange={(e) => setFormaPagamentoComanda(e.target.value as FormaPagamento)}
-                  className="w-full p-2 rounded bg-gray-700"
-                >
-                  <option value="">Selecione</option>
-                  <option value="dinheiro">Dinheiro</option>
-                  <option value="pix">PIX</option>
-                  <option value="cartao_debito">Cartão de Débito</option>
-                  <option value="cartao_credito">Cartão de Crédito</option>
-                </select>
-                {['pix', 'dinheiro', 'cartao_debito', 'cartao_credito'].includes(formaPagamentoComanda) && (
-                  <div className="mb-4">
-                    <label className="block mb-2">Valor Recebido:</label>
-                    <input
-                      type="text"
-                      value={valorPagoComanda.toLocaleString('pt-BR', {
-                        style: 'currency',
-                        currency: 'BRL'
-                      })}
-                      onChange={(e) => {
-                        const apenasNumeros = e.target.value.replace(/\D/g, '');
-                        const valor = Number(apenasNumeros) / 100;
-                        setValorPagoComanda(valor);
-                      }}
-                      className="w-full p-2 rounded bg-gray-700"
-                    />
-                  </div>
-                )}
-              </div>
-                <div className="dividir-conta">
-                  <label className="text-white mr-2">Dividir conta?</label>
-                  <input 
-                    type="checkbox" 
-                    checked={dividirConta}
-                    onChange={() => setDividirConta(!dividirConta)}
-                    className="h-4 w-4 text-blue-600 rounded"
-                  />
-                  {dividirConta && (
-                    <div className="botton-dividir">
-                      <button
-                        onClick={() => setQuantidade((prev) => Math.max(1, prev - 1))}
-                        className="text-white text-lg px-2 hover:text-red-400"
-                        style={{ marginRight: 15 }}
-                      >
-                        −
-                      </button>
-                      <span 
-                        className="text-white font-semibold"
-                        style={{ marginRight: 15 }}
-                      >
-                        {quantidade}
+        {/* Painel detalhado da comanda selecionada */}
+        {comandaSelecionada && (
+          <div className="dinamico-comanda">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold">
+                Mesa {comandaSelecionada.numero_mesa} - {comandaSelecionada.nome_cliente || 'Sem nome'}
+              </h2>
+              <button
+                onClick={() => setComandaSelecionada(null)}
+                className="text-gray-400 hover:text-white text-xl"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Itens da comanda */}
+            <div className="mb-6">
+              <p className="font-semibold mb-2">Itens da comanda:</p>
+              {itensComandaSelecionada.length === 0 ? (
+                <p className="text-gray-400">Nenhum item adicionado</p>
+              ) : (
+                <ul className="mb-4 space-y-2">
+                  {itensComandaSelecionada.map(item => (
+                    <li key={item.id} className="flex justify-between">
+                      <span>
+                        {item.quantidade}x {item.nome_produto}
                       </span>
-                      <button
-                        onClick={() => setQuantidade((prev) => prev + 1)}
-                        className="text-white text-lg px-2 hover:text-green-400"
-                      >
-                        +
-                      </button>
-                    </div>
-                  )}
+                      <span>
+                        R$ {(item.quantidade * item.preco_unitario).toFixed(2)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            {/* Resumo financeiro */}
+            <div className="border-t pt-4 mb-6">
+              <div className="flex items-center justify-between">
+              <label className="flex items-center space-x-2" style={{ marginBottom: 10, marginTop: 10 }}>
+                <input
+                  type="checkbox"
+                  checked={taxaServico} // Aqui deve ser o estado booleano real
+                  onChange={() => setTaxaServico(!taxaServico)}
+                  
+                  className="h-4 w-4 text-blue-600 rounded"
+                />
+                <span>
+                  Taxa de serviço ({(taxaPercentual * 100).toFixed(0)}%)
+                </span>
+              </label>
+            </div>
+              <div className="flex justify-between mb-1">
+                <span>Subtotal:</span>
+                <span>R$ {calcularSubtotal().toFixed(2)}</span>
+              </div>
+              <div className="taxaComanda">
+                <span>Taxa:</span>
+                <span>
+                  {taxaServicoComanda !== true ? formatarValorTaxa(calcularTaxa()) : '--'}
+                </span>
+              </div>
+              <div className="flex justify-between font-bold text-lg mt-2">
+                <span>Total:</span>
+                <span>R$ {calcularTotal().toFixed(2)}</span>
+              </div>
+            </div>
+
+            {/* Forma de pagamento */}
+            <div className="mb-4">
+              <label className="block mb-2">Forma de Pagamento:</label>
+              <select
+                value={formaPagamentoComanda}
+                onChange={(e) => setFormaPagamentoComanda(e.target.value as FormaPagamento)}
+                className="w-full p-2 rounded bg-gray-700"
+              >
+                <option value="">Selecione</option>
+                <option value="dinheiro">Dinheiro</option>
+                <option value="pix">PIX</option>
+                <option value="cartao_debito">Cartão de Débito</option>
+                <option value="cartao_credito">Cartão de Crédito</option>
+              </select>
+              {['pix', 'dinheiro', 'cartao_debito', 'cartao_credito'].includes(formaPagamentoComanda) && (
+                <div className="mb-4">
+                  <label className="block mb-2">Valor Recebido:</label>
+                  <input
+                    type="text"
+                    value={valorPagoComanda.toLocaleString('pt-BR', {
+                      style: 'currency',
+                      currency: 'BRL'
+                    })}
+                    onChange={(e) => {
+                      const apenasNumeros = e.target.value.replace(/\D/g, '');
+                      const valor = Number(apenasNumeros) / 100;
+                      setValorPagoComanda(valor);
+                    }}
+                    className="w-full p-2 rounded bg-gray-700"
+                  />
                 </div>
-                {dividirConta && quantidade > 1 && (
-                  <div className="mt-4 space-y-4">
-                    {formasPagamentosExtras.map((pagamento, index) => (
-                      <div key={index} className="pagamentos-extras">
-                        <label className="block text-white mb-2">
-                          Pagamento adicional {index + 2}
-                        </label>
-                        <select
-                          value={pagamento.forma}
-                          onChange={(e) => {
-                            const novasFormas = [...formasPagamentosExtras];
-                              novasFormas[index] = {
-                              ...novasFormas[index],
-                              forma: e.target.value as FormaPagamento,
-                            };
-                            setFormasPagamentosExtras(novasFormas);
-                          }}
-                          className="w-full mb-2 px-3 py-2 rounded bg-gray-800 text-white border border-gray-600"
-                          >
-                          {Object.entries(formasPagamentoLabels).map(([value, label]) => (
-                          <option key={value} value={value}>
-                            {label}
-                          </option>
-                          ))}
-                        </select>
-                        <label>Insira o valor recebido: </label>
-                        <input
-                          type="text"
-                          value={pagamento.valor.toLocaleString('pt-BR', {
-                            style: 'currency',
-                            currency: 'BRL'
-                            })}
-                          onChange={(e) => {
-                            const novasFormas = [...formasPagamentosExtras];
-                            const valorBruto = e.target.value.replace(/\D/g, '');
-                            const valor = Number((parseFloat(valorBruto) / 100).toFixed(2)); // 👈 corrige o ponto flutuante
-                            novasFormas[index] = {
-                            ...novasFormas[index],
-                              valor: valor,
-                            };
-                            setFormasPagamentosExtras(novasFormas);
-                          }}
-                          className="w-full px-3 py-2 rounded bg-gray-800 text-white border border-gray-600"
-                          placeholder="R$ 0,00"
-                        />
-                      </div>
-                    ))}
+              )}
+            </div>
+              <div className="dividir-conta">
+                <label className="text-white mr-2">Dividir conta?</label>
+                <input 
+                  type="checkbox" 
+                  checked={dividirConta}
+                  onChange={() => setDividirConta(!dividirConta)}
+                  className="h-4 w-4 text-blue-600 rounded"
+                />
+                {dividirConta && (
+                  <div className="botton-dividir">
+                    <button
+                      onClick={() => setQuantidade((prev) => Math.max(1, prev - 1))}
+                      className="text-white text-lg px-2 hover:text-red-400"
+                      style={{ marginRight: 15 }}
+                    >
+                      −
+                    </button>
+                    <span 
+                      className="text-white font-semibold"
+                      style={{ marginRight: 15 }}
+                    >
+                      {quantidade}
+                    </span>
+                    <button
+                      onClick={() => setQuantidade((prev) => prev + 1)}
+                      className="text-white text-lg px-2 hover:text-green-400"
+                    >
+                      +
+                    </button>
                   </div>
                 )}
-              <div className="border-t pt-4 mb-6">
-                <div className="flex justify-between">
-                  <span>Valor Pago:</span>
-                  <span>R$ {valorPagoComanda.toFixed(2)}</span>
-                </div>
-                <div className={`flex justify-between ${
-                  calcularRestante() > 0 ? 'text-yellow-400' : 'text-green-400'
-                }`}>
-                  <span>{calcularRestante() > 0 ? 'Restante:' : 'Troco:'}</span>
-                  <span>R$ {Math.abs(calcularRestante()).toFixed(2)}</span>
-                </div>
-              </div>
-              <div className="flex space-x-2">
-                <button
-                  onClick={finalizarComanda}
-                  disabled={calcularRestante() !== 0 || !formaPagamentoComanda}
-                  className={`bg-green-500 hover:bg-green-600 px-4 py-2 rounded flex-1 ${
-                    calcularRestante() > 0 || !formaPagamentoComanda ? 'opacity-50 cursor-not-allowed' : ''
-                  }`}
-                >
-                  Finalizar Comanda
-                </button>
-              </div>
-            </div>
-          )}
-        {comandaSelecionada && statusAtivo === "encerradas" && (
-            <div className="dinamico-comanda">
-              <div className="flex justify-between items-center mb-4 gap-[10px]">
-                <h2 className="text-2xl font-bold">
-                  Mesa {comandaSelecionada.numero_mesa} - {comandaSelecionada.nome_cliente || 'Sem nome'}
-                </h2>
-                <button
-                  onClick={() => setComandaSelecionada(null)}
-                  className="text-gray-400 hover:text-white text-xl"
-                >
-                  ✕
-                </button>
-              </div>
-              <div className="mb-6">
-                <p className="font-semibold mb-2">Itens da comanda:</p>
-                {itensComandaSelecionada.length === 0 ? (
-                  <p className="text-gray-400">Nenhum item adicionado</p>
-                ) : (
-                  <ul className="mb-4 space-y-2">
-                    {itensComandaSelecionada.map(item => (
-                      <li key={item.id} className="flex justify-between">
-                        <span>
-                          {item.quantidade}x {item.nome_produto}
-                        </span>
-                        <span>
-                          R$ {(item.quantidade * item.preco_unitario).toFixed(2)}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-              <div className="border-t pt-4 mb-6">
-                <div className="flex justify-between mb-1">
-                  <span>Subtotal:</span>
-                  <span>R$ {calcularSubtotal().toFixed(2)}</span>
-                </div>
-                <div className="taxaComanda">
-                  <span>Taxa:</span>
-                  <span>
-                     {comandaSelecionada?.taxa_status ? comandaSelecionada.taxa_servico : '--'}
-                  </span>
-                </div>
-                <div className="flex justify-between font-bold text-lg mt-2">
-                  <span>Total:</span>
-                  <span>R$ {comandaSelecionada.valor_comanda}</span>
-                </div>
-              </div>
-              <div className="border-t pt-4 mb-6">
-                <div className="flex justify-between my-[10px] border border-dashed border-white border-[1px] p-[5px] rounded-[10px]">
-                  <span>Valor Pago:</span>
-                  <span>R$ {comandaSelecionada.valor_comanda}</span>
-                </div>
                 
               </div>
+              {dividirConta && quantidade > 1 && (
+                                  <div className="mt-4 space-y-4">
+                                    {formasPagamentosExtras.map((pagamento, index) => (
+                                      <div key={index} className="pagamentos-extras">
+                                        <label className="block text-white mb-2">
+                                          Pagamento adicional {index + 2}
+                                        </label>
 
-              {/* Ações */}
-               
-               <div className="exclusaoComanda">
-                <label>Confirme a exclusão</label>
-                <input
-                  type="text"
-                  value={excluirComanda}
-                  placeholder="DELETAR COMANDA"
-                  onChange={(e) => setExcluirComanda(e.target.value)}
-                />
-               </div>
-                
+                                        <select
+                                          value={pagamento.forma}
+                                          onChange={(e) => {
+                                            const novasFormas = [...formasPagamentosExtras];
+                                            novasFormas[index] = {
+                                              ...novasFormas[index],
+                                              forma: e.target.value as FormaPagamento,
+                                            };
+                                            setFormasPagamentosExtras(novasFormas);
+                                          }}
+                                          className="w-full mb-2 px-3 py-2 rounded bg-gray-800 text-white border border-gray-600"
+                                        >
+                                          {Object.entries(formasPagamentoLabels).map(([value, label]) => (
+                                            <option key={value} value={value}>
+                                              {label}
+                                            </option>
+                                          ))}
+                                        </select>
+                                        <label>Insira o valor recebido: </label>
+                                        <input
+                                          type="text"
+                                          value={pagamento.valor.toLocaleString('pt-BR', {
+                                            style: 'currency',
+                                            currency: 'BRL'
+                                          })}
+                                          onChange={(e) => {
+                                            const novasFormas = [...formasPagamentosExtras];
+                                            const valorBruto = e.target.value.replace(/\D/g, '');
+                                            const valor = Number((parseFloat(valorBruto) / 100).toFixed(2)); // 👈 corrige o ponto flutuante
+                                            novasFormas[index] = {
+                                              ...novasFormas[index],
+                                              valor: valor,
+                                            };
+                                            setFormasPagamentosExtras(novasFormas);
+                                          }}
 
-              <div className="flex space-x-2">
-                <button
-                  disabled={excluirComanda !== "DELETAR COMANDA"}
-                  onClick={deletarComanda}
-                  className={`bg-red-600 hover:bg-red-700 px-4 py-2 rounded flex-1 ${
-                    excluirComanda !== "DELETAR COMANDA" ? 'opacity-50 cursor-not-allowed' : ''
-                  }`}
-                >
-                  Deletar comanda
-                </button>
+                                          className="w-full px-3 py-2 rounded bg-gray-800 text-white border border-gray-600"
+                                          placeholder="R$ 0,00"
+                                        />
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+
+
+              
+
+
+
+            {/* Resumo de pagamento */}
+            <div className="border-t pt-4 mb-6">
+              <div className="flex justify-between">
+                <span>Valor Pago:</span>
+                <span>R$ {valorPagoComanda.toFixed(2)}</span>
+              </div>
+              <div className={`flex justify-between ${
+                calcularRestante() > 0 ? 'text-yellow-400' : 'text-green-400'
+              }`}>
+                <span>{calcularRestante() > 0 ? 'Restante:' : 'Troco:'}</span>
+                <span>R$ {Math.abs(calcularRestante()).toFixed(2)}</span>
               </div>
             </div>
-          )} 
-      </div>      
+
+            {/* Ações */}
+            <div className="flex space-x-2">
+              <button
+                onClick={finalizarComanda}
+                disabled={calcularRestante() !== 0 || !formaPagamentoComanda}
+                className={`bg-green-500 hover:bg-green-600 px-4 py-2 rounded flex-1 ${
+                  calcularRestante() > 0 || !formaPagamentoComanda ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+              >
+                Finalizar Comanda
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
   const renderCozinha = () => {
-    return (      
-      <div>
-        <div className="paginaComandas">
-          <div>
-            <h1 className="titulo-mesas">Cozinha</h1>
-          </div>
-          <div className="buttonComandas">
-            <button
-              className={`botao-entregar ${statusEntregue === "pendente" ? "ativo" : ""}`}
-              data-status="abertas"
-              onClick={() => setStatusEntregue("pendente")}
-            >
-              Não entregue
-            </button>
-            <button
-              className={`botao-entregar ${statusEntregue === "encerrado" ? "ativo" : ""}`}
-              data-status="encerrado"
-              onClick={() => setStatusEntregue("encerrado")}
-            >
-              Finalizado
-            </button>
-           </div>
-        </div>
-        <div className="conteudo-mesas">
-          {statusEntregue === "pendente" && (
-            <div className="catalogo-grid-cozinha">
-              {itemEntregue.map((item) => (
-                <div
-                  key={item.id}
-                  className="item"
-                >
-                  <h3>Mesa: {item.comandas?.numero_mesa} </h3>
-                  <h4>{item.nome_produto}</h4>
-                  <p>Quantidade: {item.quantidade}</p>
-                  <p>Detalhes: {item.observacoes}</p>
-                  
-                  <button 
-                    className="buttonCozinha"
-                    onClick={() => finalizarEntrega(item)}
-                  >
-                    Confirmar entrega
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-          {statusEntregue === "encerrado" && (
-            <div className="catalogo-grid-cozinha">
-              {itemEntregue.map((item) => (
-                <div
-                  key={item.id}
-                >
-                  <h3>{item.nome_produto}</h3>
-                  <p>{item.quantidade} </p>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-      
+    return (
+      <h1 className="titulo-mesas">Cozinha</h1>
     )
   }
   const renderBar = () => {

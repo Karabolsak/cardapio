@@ -1,0 +1,343 @@
+.titulo-mesas {
+    border-bottom: #BACBD9 1px dashed;
+    margin: 5px 5px 20px 5px;
+    text-align: -webkit-left;
+}.conteudoClientes {
+   display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+}.conteudoClientes p {
+    padding: 5px;
+    border: 1px solid white;   
+}.conteudoClientes li {
+    padding: 10px;
+}.tabela {
+    background-color: rgba(0, 0, 0, 0.2);
+}.conteudo-mesas {
+  flex: 2;
+}.catalogo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+  width: 100%;
+}.catalogo-grid-mesas {
+  flex: 2;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 16px;
+  max-height: 100%;
+}.item-card {
+  background: #2d2d2d;
+  border: 1px solid #BACBD9;
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 10px;
+  transition: transform 0.2s;
+  cursor: pointer;
+}.item-card:hover {
+  transform: translateY(-5px);
+}.item-img {
+  width: 100%;
+  height: 100px;
+  object-fit: scale-down;
+  border-radius: 8px;
+  margin-bottom: 12px;
+}.item-card p {
+  margin: 0;
+  text-align: left;
+  font-style: italic;
+}.item-card h3 {
+  margin-top: 5px;
+  margin-bottom: 5px;
+}.item-card h4 {
+  margin: 0;  
+}.item-card h5 {
+  font-weight: 500;
+  margin: 0;
+  padding-bottom: 5px;
+}.preco {
+  color: #00E676;
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 40px;
+}.catalogo-gridMesas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1.5rem;
+  width: 80%;
+}.produtosMesa {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}.mesa {
+  position: relative;
+  padding: 20px;
+  border-radius: 12px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 1.2rem;
+  color: white;
+  cursor: pointer;
+  overflow: visible;
+  transition: transform 0.3s ease;
+}.mesa-livre {
+  background-color: #1a4d1a; 
+  box-shadow:
+    0 0 10px 2px rgba(0, 255, 0, 0.5),
+    0 0 20px 6px rgba(0, 255, 0, 0.3);
+  animation: fumaça-verde 4s ease-in-out infinite;
+}.mesa-livre p {
+  margin: 0;
+  font-style: italic;
+  font-weight: 200;
+}.mesa-ocupada p {
+  margin: 0;
+  font-style: italic;
+  font-weight: 200;
+}.mesa-ocupada {
+  background-color: #4d1a1a; 
+  box-shadow:
+    0 0 10px 2px rgba(255, 0, 0, 0.5),
+    0 0 20px 6px rgba(255, 0, 0, 0.3);
+  animation: fumaça-vermelha 4s ease-in-out infinite;
+}@keyframes fumaça-verde {
+  0%, 100% {
+    box-shadow:
+      0 0 1px 2px rgba(0, 255, 0, 0.5),
+      0 0 1px 1px rgba(0, 255, 0, 0.3);
+  }
+  50% {
+    box-shadow:
+      0 0 10px 2px rgba(0, 255, 0, 0.7),
+      0 0 1px 1px rgba(0, 255, 0, 0.5);
+  }
+}@keyframes fumaça-vermelha {
+  0%, 100% {
+    box-shadow:
+      0 0 1px 2px rgba(255, 0, 0, 0.5),
+      0 0 1px 1px rgba(255, 0, 0, 0.3);
+  }
+  50% {
+    box-shadow:
+      0 0 10px 2px rgba(255, 0, 0, 0.7),
+      0 0 1px 1px rgba(255, 0, 0, 0.5);
+  }
+}.mesa:hover {
+  transform: scale(1.05);
+  box-shadow:
+    0 0 25px 10px rgba(255, 255, 255, 0.8);
+}.catalogo-grid p {
+  font-size: medium;
+  font-style: italic;
+}.dinamico-comanda {
+  background-color: #242424;
+  border: 1px solid #A6754B;
+  padding: 10px;
+  margin-right: 20px;
+  border-radius: 20px;
+  height: fit-content;
+}.dinamico-comanda P {
+  margin: 0;
+}.dinamico-comanda h2 {
+  margin: 0;
+}.dinamico-comanda li {
+  padding: 0px;
+}.conteudo-produtos {
+  flex: 2; 
+  overflow-y: auto; 
+}.dinamico-produto {
+  flex: 1; /* Ocupa 1/3 do espaço disponível */
+  background: #1e1e1e; /* Cor de fundo */
+  border: 1px solid #A6754B;
+  padding: 20px;
+  margin-top: 10px;
+  border-radius: 8px;
+  position: sticky;
+  top: 20px;
+  max-height: 90vh;
+  overflow-y: auto;
+
+}.descritivo-produtos {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}.descritivo-produtos p {
+  margin: 0;
+}.dinamico-produto p {
+  margin: 0;
+}.img-prod {
+  width: 70px;
+}.nomeCliente {
+  font-size: small;
+}.input-estilizado {
+  width: 70%;
+  padding: 0.5rem 0.75rem;
+  margin: 10px;
+  border-radius: 0.25rem;
+  background-color: #1f2937;
+  color: #ffffff;
+  border: 1px solid #4b5563;
+}.input-estilizado:focus {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);
+  --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(3px + var(--tw-ring-offset-width)) var(--tw-ring-color);
+  box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
+  --tw-ring-color: #3b82f6;
+}.item-comanda::after {
+  content: "";
+  display: block;
+  height: 1px;
+  background: repeating-linear-gradient(to right, #6b7280 0, #6b7280 4px, transparent 4px, transparent 8px);
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}.observacoes-pedidos {
+  margin: 10px 0px 10px 0px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}.mb-4{
+  margin: 10px 0px 10px 0px;
+}.formulario-Cliente {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}.dividir-conta {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-top: 10px;
+}.botton-dividir button {
+  margin: 0;
+}.terminar-cliente {
+  display: flex;
+    flex-direction: column;
+    align-items: center;
+}.pagamentos-extras {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}.conteudo-geral {
+  display: flex;
+  gap: 20px; 
+  padding: 20px;
+  height: calc(100vh - altura-do-header); 
+}@media (max-width: 768px) {
+  .conteudo-geral {
+    flex-direction: column;
+  }
+  
+  .conteudo-produtos, .dinamico-produto {
+    flex: none;
+    width: 100%;
+  }
+  
+  .dinamico-produto {
+    position: static;
+    margin-top: 20px;
+  }
+  
+  .catalogo-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+}.titulo-comanda {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+}.titulo-comanda h2 {
+  margin: 0;
+}
+.catalogo-grid-comandas {
+  flex: 2;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  max-height: 100%;
+  gap: 20px;
+}.paginaComandas {
+  border-bottom: #BACBD9 1px dashed;
+  margin: 5px 5px 20px 5px;
+  text-align: -webkit-left;
+  display: flex;  
+}.paginaComandas h1 {
+  margin: 0;
+}.buttonComandas button {
+  margin-left: 20px;
+  height: 40px;
+  width: 100px;
+  border-radius: 10px;
+}.buttonComandas {
+  display: flex;
+  gap: 12px;
+}.botao-status {
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  color: white;
+  cursor: pointer;
+  background-color: #e5e7eb; /* cinza claro para inativo */
+  color: #333;
+  transition: background 0.4s ease-in-out, color 0.3s;
+  position: relative;
+  overflow: hidden;
+}.botao-status.ativo {
+  color: white;
+  background: linear-gradient(-45deg, #4ade80, #22c55e, #16a34a); /* tons de verde */
+  background-size: 200% 200%;
+  animation: moveGradient 1s ease forwards;
+}.botao-status.ativo[data-status="encerradas"] {
+  background: linear-gradient(-45deg, #f87171, #ef4444, #b91c1c); /* tons de vermelho */
+  background-size: 200% 200%;
+  animation: moveGradient 1s ease forwards;
+}@keyframes moveGradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 100% 50%;
+  }
+}
+
+.comandasInfoATIVA {
+  border-style: var(--tw-border-style);
+  border-width: 2px;
+}
+.comandasInfoINATIVA {
+   box-shadow:
+    0 0 1px 1px rgba(179, 250, 131, 0.8);
+}
+.comanda {
+    position: relative;
+    padding: 20px;
+    border-radius: 12px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 1.2rem;
+    color: white;
+    cursor: pointer;
+    overflow: visible;
+    transition: transform 0.3s ease;
+}.comanda:hover {
+  transform: scale(1.05);
+  box-shadow:
+    0 0 1px 1px rgba(179, 250, 131, 0.8);
+}
+.comandaInfoENCERRADA {
+  box-shadow:
+    0 0 1px 1px rgba(250, 131, 131, 0.8);
+}
+.aberta {
+  color: #00E676;
+}
+.fechada {
+  color: red
+}
+.taxaComanda {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.25rem;
+  gap: 10px;
+}

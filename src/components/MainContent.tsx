@@ -1745,9 +1745,23 @@ useEffect(() => {
               {itemEntregue.map((item) => (
                 <div
                   key={item.id}
+                  className="itemEncerrado"
                 >
                   <h3>{item.nome_produto}</h3>
-                  <p>{item.quantidade} </p>
+                  <div className="divEnc">
+                    <div>
+                      <p className="tempoEntrega">Quantidade</p>
+                      <p className="encItem">{item.quantidade} </p>
+                    </div>
+                    <div>
+                      <p className="tempoEntrega">Tempo de entrega: </p>
+                      <p className="encItem">{item.tempo_entrega} Minuto(s)</p> 
+                    </div>        
+                    <div>
+                      <p className="tempoEntrega">Entrege por: </p>
+                      <p className="encItem">nomeEntregador</p>
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>

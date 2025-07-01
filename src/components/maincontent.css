@@ -359,10 +359,7 @@
   background: linear-gradient(-45deg, #f87171, #ef4444, #b91c1c); /* tons de vermelho */
   background-size: 200% 200%;
   animation: moveGradient 1s ease forwards;
-}
-
-
-.catalogo-grid-cozinha {
+}.catalogo-grid-cozinha {
   flex: 2;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -370,14 +367,11 @@
   gap: 20px;
   margin: 20px;
   padding-bottom: 20px;
-}
-.item h3 {
+}.item h3 {
   border-bottom: 1px solid aliceblue;
-}
-.item h4 {
+}.item h4 {
   font-style: italic;
-}
-.item {
+}.item {
    position: relative;
     padding: 20px;
     border-radius: 12px;
@@ -391,25 +385,63 @@
     display: flex;
     justify-content: space-between;
     flex-direction: column;
-}
-.item:hover {
+}.item:hover {
   transform: scale(1.05);
   box-shadow:
     0 0 1px 1px #BACBD9; 
   transition: transform 0.3s ease-in-out;
-}
-.buttonCozinha {
+}.buttonCozinha {
   background-color: #A6754B;
   height: 30px;
   border-radius: 10px;
   border: none;
   cursor: pointer;
-}
-.buttonCozinha:hover {
+}.buttonCozinha:hover {
   transform: translateY(-10px); 
   transition: transform 0.3s ease-in-out;
   background-color: #00E676;
   box-shadow: 0 0 10px 3px #A6754B;
   color: #081E26;
   font-weight: bold;
+}.itemEncerrado {
+  position: relative;
+  padding: 20px;
+  border-radius: 12px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 1.2rem;
+  color: white;
+  overflow: visible;
+  transition: transform 0.3s ease;
+  border: 1px solid #6aaf6a; 
+  display: flex;
+  justify-content: space-between;
+  flex-direction: column;
+}.itemEncerrado:hover {
+  transform: scale(1.05);
+  box-shadow:
+    0 0 1px 1px #BACBD9; 
+  transition: transform 0.3s ease-in-out;
+}.itemEncerrado h3 {
+  border-bottom: 1px solid aliceblue;
+}.itemEncerrado h4 {
+  font-style: italic;
+}.itemEncerrado p {
+  margin: 0;
+}.tempoEntrega {
+  font-style: italic;
+}.divEncerrados {
+  display: flex;
+  gap: 10px;
+}.divEnc {
+  display: flex;
+  flex-direction: column;
+  justify-content: start;
+  gap: 10px;
+}.encItem {
+  border-style:dashed;
+  border-width: 1px;
+  border-color: aliceblue;
+  border-radius: 20px;
+  color: #A6754B;
 }

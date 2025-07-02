@@ -22,13 +22,13 @@ type Mesa = {
   id_comanda: number;
 };
 type Cliente = {
-  id: number;
+  id: string;
   nome: string;
   cpf: string;
   nascimento: string;
   telefone: string;
   criado_em: string;
-  gasto_total: number;
+  total_gasto: number;
 };
 type Loja = {
   id_loja: number;
@@ -179,7 +179,6 @@ type Comandas = {
   }
 
   const comanda = comandasAbertas[0];
-
   const subtotal = itensComanda.reduce((total, item) => total + (item.quantidade * item.preco_unitario), 0);
   const valorTaxa = taxaServico ? Number((subtotal * 0.1).toFixed(2)) : 0;
   const dividirConta = setDividirConta;
@@ -471,26 +470,52 @@ type Comandas = {
     if (!comandaSelecionada) return;
 
     try {
-      const { error } = await supabase
+      const valorComanda = calcularTotal();
+      const taxaServicoValor = calcularTaxa();
+      const valorFinal = valorComanda + taxaServicoValor;
+      
+      const { data: comandaAtualizada, error } = await supabase
         .from('comandas')
         .update({
           status: false,
           fechada_em: new Date().toISOString(),
           taxa_status: taxaServico,
-          taxa_servico: calcularTaxa(),
+          taxa_servico: taxaServicoValor,
           forma_pagamento: formaPagamentoComanda,
-          valor_comanda: calcularTotal(),
+          valor_comanda: valorFinal,
           mais_pagantes: dividirConta,
           quantidade_pagantes: quantidade,
         })
-        .eq('id', comandaSelecionada.id);
-
+        .eq('id', comandaSelecionada.id)
+        .select('cpf_cliente')
+        .single();
+        
       if (error) throw error;
-      
+
+      const cpfNumerico = comandaAtualizada.cpf_cliente.replace(/\D/g, '');
+      const valorNumerico = Number(valorFinal);
+
+      const { data: result } = await supabase.rpc('incrementar_gasto_cliente', {
+        p_cpf: cpfNumerico,
+        p_valor: valorNumerico
+      });
+
+      if (error) {
+        console.error('Erro na chamada RPC:', error);
+        throw error;
+      }
+
+      if (result.status === 'error') {
+        console.error('Erro na função RPC:', result.message);
+        throw new Error(result.message);
+      }
+
+      console.log('Sucesso! Linhas afetadas:', result.rows_affected);
+        
       const { error: updateItensError } = await supabase
         .from("itens_comanda")
         .update({ 
-        status: true, 
+        status_entrega: true, 
         encerrado_em: new Date().toISOString() 
         })
         .eq("id_comanda", comandaSelecionada.id);
@@ -506,7 +531,7 @@ type Comandas = {
 
       setComandaAbertas(comandaAbertas.filter(c => c.id !== comandaSelecionada.id));
       setComandaSelecionada(null);
-      alert('Comanda encerrada com sucesso!');
+      alert('Comanda encerrada com sucesso!'); // window.location.reload();
 
     } catch (error) {
       console.error('Erro ao finalizar comanda:', error);
@@ -572,7 +597,7 @@ botoes.forEach((btn) => {
     return [];
   }
 };
-const finalizarEntrega = async (item: { id: number; adicionado_em: string }) => {
+  const finalizarEntrega = async (item: { id: number; adicionado_em: string }) => {
   try {
     const adicionado = new Date(item.adicionado_em);
     const encerrado = new Date();
@@ -621,11 +646,11 @@ const finalizarEntrega = async (item: { id: number; adicionado_em: string }) => 
     console.error('❌ Erro ao finalizar entrega:', error);
   }
 };
-
 const getBrazilianTime = () => {
   const now = new Date();
   return new Date(now.getTime() - now.getTimezoneOffset() * 60000);
 };
+const limparCPF = (cpf: string) => cpf.replace(/\D/g, ''); // remove tudo que não for número
 
 
 
@@ -633,7 +658,10 @@ const getBrazilianTime = () => {
 
 
 
-// Pagina comanda 15
+
+
+
+// Pagina Clientes DEU CERTO BOA PARTE
 
 
 
@@ -816,6 +844,9 @@ useEffect(() => {
 }, [statusEntregue]); 
 
 
+
+
+
  
 
 
@@ -883,8 +914,6 @@ useEffect(() => {
                               (mesa) => String(mesa.id) === idSelecionado
                             );
                             setMesaParaAdicionar(mesaSelecionada || null);
-                            
-                            // Busca a comanda ativa para a mesa selecionada
                             if (mesaSelecionada) {
                               const { data: comanda } = await supabase
                                 .from('comandas')
@@ -986,12 +1015,21 @@ useEffect(() => {
             {clientes.map((cliente) => (
               <tr key={cliente.id} className="tabela">
                 <td className="p-4">{cliente.nome}</td>
-                <td className="p-4">{cliente.cpf}</td>
-                <td className="p-4">{cliente.nascimento}</td>
+                <td className="p-4">{formatarCPF(limparCPF(cliente.cpf || ''))} </td>
+                <td className="p-4">{new Date(cliente.nascimento).toLocaleDateString('pt-BR')} </td>
                 <td className="p-4">{cliente.telefone}</td>
                 <td className="p-4">{new Date(cliente.criado_em).toLocaleString('pt-BR')}</td>
-                <td className="p-4">{loja[0]?.nome}</td>
-                <td className="p-4">{cliente.gasto_total}</td>
+                <td className="p-4">{loja[0]?.nome || 'N/A'}</td>
+                <td className="p-4">
+                  {!isNaN(Number(cliente.total_gasto)) ? (
+                    Number(cliente.total_gasto).toLocaleString('pt-BR', {
+                      style: 'currency',
+                      currency: 'BRL'
+                    })
+                  ) : (
+                    'R$ 0,00'
+                  )}</td>
+                  
               </tr>
             ))}
            </tbody>

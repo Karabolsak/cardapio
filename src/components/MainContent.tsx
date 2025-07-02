@@ -1466,17 +1466,17 @@ useEffect(() => {
               </div>
               <div className="flex space-x-2">
                 <button
-  onClick={finalizarComanda}
-  disabled={Math.abs(calcularRestante()) > 0.009 || !formaPagamentoComanda}
-  className={`
-    bg-green-500 hover:bg-green-600 px-4 py-2 rounded flex-1
-    ${Math.abs(calcularRestante()) > 0.009 || !formaPagamentoComanda 
-      ? 'opacity-50 cursor-not-allowed' 
-      : 'cursor-pointer'}
-  `}
->
-  Finalizar Comanda
-</button>
+                  onClick={finalizarComanda}
+                  disabled={Math.abs(calcularRestante()) > 0.009 || !formaPagamentoComanda}
+                  className={`
+                    bg-green-500 hover:bg-green-600 px-4 py-2 rounded flex-1
+                    ${Math.abs(calcularRestante()) > 0.009 || !formaPagamentoComanda 
+                      ? 'opacity-50 cursor-not-allowed' 
+                      : 'cursor-pointer'}
+                  `}
+                >
+                  Finalizar Comanda
+                </button>
               </div>
             </div>
           )}

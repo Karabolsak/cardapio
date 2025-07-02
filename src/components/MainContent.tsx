@@ -3,6 +3,7 @@ import "./maincontent.css";
 import { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient"
 import shopping from "../../src/assets/add-shopping-car.svg"
+import { CheckCircle, Circle } from 'lucide-react';
 
 export default function MainContent({ selected }: { selected: string }) {
   
@@ -94,16 +95,13 @@ type Comandas = {
   const [mensagemSucesso, setMensagemSucesso] = useState<string | null>(null);
   const [nomeCliente, setNomeCliente] = useState("");
   const [cpfCliente, setCpfCliente] = useState<string | ''>('');
-  const [formaPagamento, setFormaPagamento] = useState('');
   const [telefoneCliente, setTelefoneCliente] = useState("");
   const [nascimentoCliente, setNascimentoCliente] = useState<string>('');
   const [emailCliente, setEmailCliente] = useState<string>('');
   const [quantidade, setQuantidade] = useState(1);
   const taxaPercentual = 0.1; // 10%
   const cpfLimpo = cpfCliente.replace(/\D/g, "");
-  const [valorTexto, setValorTexto] = useState("0");
   const [formasPagamentosExtras, setFormasPagamentosExtras] = useState<PagamentoExtra[]>([]);
-  const [valorPago, setValorPago] = useState<number>(0);
   const [observacoesPedidos, setObservacoesPedidos] = useState<string>('');
   const [comandaSelecionada, setComandaSelecionada] = useState<Comandas | null>(null);
   const [itensComandaSelecionada, setItensComandaSelecionada] = useState<ItemComanda[]>([]);
@@ -166,6 +164,9 @@ type Comandas = {
   setTodasMesas(atualizadas);
   setMesaSelecionada({ ...mesa, ativa: true });
 };
+{/*
+  const [formaPagamento, setFormaPagamento] = useState('');
+  const [valorPago, setValorPago] = useState<number>(0);
   const encerrarComanda = async (mesa: Mesa) => {
   const { data: comandasAbertas, error: fetchError } = await supabase
     .from("comandas")
@@ -233,7 +234,35 @@ type Comandas = {
   setNomeCliente("");
 
   console.log("Comanda e itens encerrados com sucesso!");
+};const calcularTotalPago = (): number => {
+    const extras = formasPagamentosExtras.reduce((acc, item) => acc + item.valor, 0);
+    return valorPago + extras;
+};const calcularValorRestante = (): number => {
+    return calcularValorTotal() - calcularTotalPago();
+};const calcularValorTotal = () => {
+  const subtotal = itensComanda.reduce((total, item) => total + item.quantidade * item.preco_unitario, 0);
+  const taxa = taxaServico ? subtotal * 0.1 : 0;
+  return subtotal + taxa;
 };
+  const calcularValorTaxa = () => {
+  const subtotal = itensComanda.reduce(
+    (total, item) => total + item.quantidade * item.preco_unitario,
+    0
+  );
+
+  const taxa = taxaServico ? subtotal * 0.1 : 0;
+
+  return Number(taxa.toFixed(2)); // 👈 garante duas casas decimais sem “zebras”
+};const formatarValorMonetario = (valor: string): string => {
+  const numeros = valor.replace(/\D/g, '') || '0';
+  const numero = (Number(numeros) / 100).toFixed(2);
+
+  return Number(numero).toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  });
+}; 
+*/}  
   const adicionarItemNaComanda = async () => {
   if (!itemSelecionado || !idComandaSelecionada) {
     alert("Selecione um produto e certifique-se que a mesa tem uma comanda ativa.");
@@ -257,7 +286,6 @@ type Comandas = {
     console.error('Erro ao adicionar item:', error);
     alert('Erro ao adicionar item, tente novamente');
   } else {
-    // Recarrega os itens da comanda
     const { data: itens } = await supabase
       .from('itens_comanda')
       .select('*')
@@ -270,21 +298,7 @@ type Comandas = {
   }
   
 };
-  const calcularValorTotal = () => {
-  const subtotal = itensComanda.reduce((total, item) => total + item.quantidade * item.preco_unitario, 0);
-  const taxa = taxaServico ? subtotal * 0.1 : 0;
-  return subtotal + taxa;
-};
-  const calcularValorTaxa = () => {
-  const subtotal = itensComanda.reduce(
-    (total, item) => total + item.quantidade * item.preco_unitario,
-    0
-  );
-
-  const taxa = taxaServico ? subtotal * 0.1 : 0;
-
-  return Number(taxa.toFixed(2)); // 👈 garante duas casas decimais sem “zebras”
-};
+  
   const formatarValorTaxa = (valor: number): string => {
     return Number(valor.toFixed(2)).toLocaleString('pt-BR', {
       style: 'currency',
@@ -381,29 +395,13 @@ type Comandas = {
   } else {
     return `(${numeros.slice(0, 2)}) ${numeros.slice(2, 7)}-${numeros.slice(7)}`;
   }
-};
-  const formatarValorMonetario = (valor: string): string => {
-  const numeros = valor.replace(/\D/g, '') || '0';
-  const numero = (Number(numeros) / 100).toFixed(2);
-
-  return Number(numero).toLocaleString('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  });
-};
+};  
   const formasPagamentoLabels: Record<FormaPagamento, string> = {
     dinheiro: 'Dinheiro',
     cartao_credito: 'Cartão de Crédito',
     cartao_debito: 'Cartão de Débito',
     pix: 'PIX'
-};
-  const calcularTotalPago = (): number => {
-    const extras = formasPagamentosExtras.reduce((acc, item) => acc + item.valor, 0);
-    return valorPago + extras;
-};
-  const calcularValorRestante = (): number => {
-    return calcularValorTotal() - calcularTotalPago();
-};
+};   
   const buscarComandasAbertas = async () => {
   try {
     const { data, error } = await supabase
@@ -646,11 +644,11 @@ botoes.forEach((btn) => {
     console.error('❌ Erro ao finalizar entrega:', error);
   }
 };
-const getBrazilianTime = () => {
+  const getBrazilianTime = () => {
   const now = new Date();
   return new Date(now.getTime() - now.getTimezoneOffset() * 60000);
 };
-const limparCPF = (cpf: string) => cpf.replace(/\D/g, ''); // remove tudo que não for número
+const limparCPF = (cpf: string) => cpf.replace(/\D/g, ''); 
 
 
 
@@ -1098,7 +1096,12 @@ useEffect(() => {
                                   <ul className="mb-4 space-y-2">
                                     {itensComanda.map((item) => (
                                       <li key={item.id} className="item-comanda bg-gray-700 p-3 rounded">
-                                        <div className="flex justify-between">
+                                        <div className="flex justify-between gap-[20px] ">
+                                          {item.status_entrega ? (
+                                              <CheckCircle className="w-5 h-5 stroke-green-500" />
+                                            ) : (
+                                              <Circle className="text-gray-500 w-5 h-5" />
+                                            )}
                                           <span>{item.nome_produto}</span>
                                           <span>
                                             {item.quantidade} x R${item.preco_unitario.toFixed(2)}
@@ -1109,177 +1112,6 @@ useEffect(() => {
                                     ))}
                                   </ul>
                                 )}
-                                <div className="flex items-center justify-between">
-                                  <label className="flex items-center space-x-2">
-                                    <input
-                                      type="checkbox"
-                                      checked={taxaServico}
-                                      onChange={() => setTaxaServico(!taxaServico)}
-                                      className="h-4 w-4 text-blue-600 rounded"
-                                    />
-                                    <span>Taxa de serviço ({(taxaPercentual * 100).toFixed(0)}%)</span>
-                                  </label>
-                                </div>
-                                <div className="text-right">
-                                  <span>Taxa: {formatarValorTaxa(calcularValorTaxa())}</span>
-                                </div>
-                                <div className="text-right">
-                                  <p className="text-xl font-bold text-white">
-                                    Total: R$ {calcularValorTotal().toFixed(2)}
-                                  </p>
-                                </div>
-                                <div className="mb-4">
-                                  <label className="block text-sm font-medium text-white mb-1">
-                                    Forma de Pagamento
-                                  </label>
-                                  <select 
-                                    value={formaPagamento}
-                                    onChange={(e) => {
-                                      setFormaPagamento(e.target.value as FormaPagamento)
-                                    }}
-                                    className="w-full p-2 rounded bg-gray-700 text-white border border-gray-600"
-                                    >
-                                    <option value="">Opções</option>
-                                    <option value="dinheiro">Dinheiro</option>
-                                    <option value="pix">Pix</option>
-                                    <option value="cartao_debito">Cartão de Débito</option>
-                                    <option value="cartao_credito">Cartão de Crédito</option>
-                                  </select>
-                                </div>
-                                {['pix', 'dinheiro', 'cartao_debito', 'cartao_credito'].includes(formaPagamento) && (
-                                  <div className="text-left mt-4">
-                                    <label className="block text-sm text-white mb-1">Insira o valor recebido:</label>
-                                    <input
-                                      type="text"
-                                      inputMode="numeric"
-                                      value={formatarValorMonetario(valorTexto)}
-                                      onChange={(e) => {
-                                        const novoValor = e.target.value;
-                                        const apenasNumeros = novoValor.replace(/\D/g, '');
-
-                                        setValorTexto(apenasNumeros); 
-                                        setValorPago(Number(apenasNumeros) / 100); 
-                                      }}
-                                      className="w-full px-3 py-2 rounded bg-gray-800 text-white border border-gray-600"
-                                      placeholder="Digite o valor"
-                                    />
-                                  </div>
-                                )}
-                                <div className="dividir-conta">
-                                    <label className="text-white mr-2">Dividir conta?</label>
-                                    <input 
-                                      type="checkbox" 
-                                      checked={dividirConta}
-                                      onChange={() => setDividirConta(!dividirConta)}
-                                      className="h-4 w-4 text-blue-600 rounded"
-                                    />
-                                    {dividirConta && (
-                                      <div className="botton-dividir">
-                                        <button
-                                          onClick={() => setQuantidade((prev) => Math.max(1, prev - 1))}
-                                          className="text-white text-lg px-2 hover:text-red-400"
-                                          style={{ marginRight: 15 }}
-                                        >
-                                          −
-                                        </button>
-                                        <span 
-                                          className="text-white font-semibold"
-                                          style={{ marginRight: 15 }}>
-                                            {quantidade}
-                                        </span>
-                                        <button
-                                          onClick={() => setQuantidade((prev) => prev + 1)}
-                                          className="text-white text-lg px-2 hover:text-green-400"
-                                        >
-                                          +
-                                        </button>
-                                      </div>
-                                    )}
-                                </div>
-                                {dividirConta && quantidade > 1 && (
-                                  <div className="mt-4 space-y-4">
-                                    {formasPagamentosExtras.map((pagamento, index) => (
-                                      <div key={index} className="pagamentos-extras">
-                                        <label className="block text-white mb-2">
-                                          Pagamento adicional {index + 2}
-                                        </label>
-
-                                        <select
-                                          value={pagamento.forma}
-                                          onChange={(e) => {
-                                            const novasFormas = [...formasPagamentosExtras];
-                                            novasFormas[index] = {
-                                              ...novasFormas[index],
-                                              forma: e.target.value as FormaPagamento,
-                                            };
-                                            setFormasPagamentosExtras(novasFormas);
-                                          }}
-                                          className="w-full mb-2 px-3 py-2 rounded bg-gray-800 text-white border border-gray-600"
-                                        >
-                                          {Object.entries(formasPagamentoLabels).map(([value, label]) => (
-                                            <option key={value} value={value}>
-                                              {label}
-                                            </option>
-                                          ))}
-                                        </select>
-                                        <label>Insira o valor recebido: </label>
-                                        <input
-                                          type="text"
-                                          value={pagamento.valor.toLocaleString('pt-BR', {
-                                            style: 'currency',
-                                            currency: 'BRL'
-                                          })}
-                                          onChange={(e) => {
-                                            const novasFormas = [...formasPagamentosExtras];
-                                            const valorBruto = e.target.value.replace(/\D/g, '');
-                                            const valor = Number((parseFloat(valorBruto) / 100).toFixed(2)); // 👈 corrige o ponto flutuante
-                                            novasFormas[index] = {
-                                              ...novasFormas[index],
-                                              valor: valor,
-                                            };
-                                            setFormasPagamentosExtras(novasFormas);
-                                          }}
-
-                                          className="w-full px-3 py-2 rounded bg-gray-800 text-white border border-gray-600"
-                                          placeholder="R$ 0,00"
-                                        />
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                                <div className="text-right">
-                                  <p className="text-xl font-bold text-white">
-                                    Total a pagar: R$ {calcularValorTotal().toFixed(2)}
-                                  </p>
-                                </div>
-                                <p className="text-green-400 mt-2 text-right">
-                                  Total recebido: {calcularTotalPago().toLocaleString('pt-BR', {
-                                    style: 'currency',
-                                    currency: 'BRL',
-                                  })}
-                                </p>
-                                <p className="text-yellow-300 mt-2 text-right">
-                                  Valor restante: {calcularValorRestante().toLocaleString('pt-BR', {
-                                    style: 'currency',
-                                    currency: 'BRL',
-                                  })}
-                                </p>
-                                {calcularValorRestante() < 0 && (
-                                  <p className="text-cyan-400 mt-2 text-right">
-                                    Troco: {(calcularValorRestante() * -1).toLocaleString('pt-BR', {
-                                      style: 'currency',
-                                      currency: 'BRL',
-                                    })}
-                                  </p>
-                                )}
-                                <button
-                                  type="button"
-                                  className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded w-full"
-                                  onClick={() => encerrarComanda(mesaSelecionada)}
-                                  disabled={Number(calcularValorRestante().toFixed(2)) !== 0}
-                                >
-                                  Encerrar Comanda
-                                </button>
                               </div>
                             ) : (
                               <div className="formulario-Cliente">
@@ -1634,14 +1466,17 @@ useEffect(() => {
               </div>
               <div className="flex space-x-2">
                 <button
-                  onClick={finalizarComanda}
-                  disabled={calcularRestante() !== 0 || !formaPagamentoComanda}
-                  className={`bg-green-500 hover:bg-green-600 px-4 py-2 rounded flex-1 ${
-                    calcularRestante() > 0 || !formaPagamentoComanda ? 'opacity-50 cursor-not-allowed' : ''
-                  }`}
-                >
-                  Finalizar Comanda
-                </button>
+  onClick={finalizarComanda}
+  disabled={Math.abs(calcularRestante()) > 0.009 || !formaPagamentoComanda}
+  className={`
+    bg-green-500 hover:bg-green-600 px-4 py-2 rounded flex-1
+    ${Math.abs(calcularRestante()) > 0.009 || !formaPagamentoComanda 
+      ? 'opacity-50 cursor-not-allowed' 
+      : 'cursor-pointer'}
+  `}
+>
+  Finalizar Comanda
+</button>
               </div>
             </div>
           )}

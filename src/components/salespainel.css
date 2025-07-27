@@ -1,5 +1,5 @@
 .vendasDia {
-    background-color: #242424;
+    background-color: var(--secondary);
     box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.5);
     padding: 5px;
     font-family: "Space Grotesk";

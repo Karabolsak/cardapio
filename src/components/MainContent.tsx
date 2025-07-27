@@ -1050,7 +1050,13 @@ useEffect(() => {
                     <div
                       key={mesa.id}
                       className={`mesa ${mesa.ativa ? 'mesa-ocupada' : 'mesa-livre'} ${
-                        mesaSelecionada?.id === mesa.id ? 'border-2 border-yellow-400' : ''
+                        mesaSelecionada?.id === mesa.id && mesa.ativa === false ? 'border-4 border-green-400' : ''
+                      } ${
+                        mesaSelecionada?.id === mesa.id && mesa.ativa === true ? 'border-4 border-yellow-400' : ''
+                      } ${
+                        mesa.ativa === false ? 'hover:border-4 hover:border-green-400' : ''
+                      } ${
+                        mesa.ativa === true ? 'hover:border-4 hover:border-yellow-400' : ''
                       }`}
                       onClick={() => setMesaSelecionada(mesa)}
                       >

@@ -1046,7 +1046,7 @@ useEffect(() => {
           <div className="conteudo-geral">
               <div className="conteudo-mesas">
                 <div className="catalogo-grid-mesas">
-                  {todasMesas.map((mesa) => (
+                  {todasMesas.sort((a, b) => a.numero - b.numero).map((mesa) => (
                     <div
                       key={mesa.id}
                       className={`mesa ${mesa.ativa ? 'mesa-ocupada' : 'mesa-livre'} ${
